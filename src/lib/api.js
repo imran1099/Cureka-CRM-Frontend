@@ -1,4 +1,6 @@
-const BASE = "/api";
+import axios from "axios";
+
+const BASE = import.meta.env.VITE_API_URL || "/api";
 
 function getToken() {
   return localStorage.getItem("cureka_token");
@@ -11,20 +13,22 @@ async function request(path, { method = "GET", body, auth = true } = {}) {
     if (token) headers.Authorization = `Bearer ${token}`;
   }
 
-  const res = await fetch(`${BASE}${path}`, {
-    method,
-    headers,
-    body: body ? JSON.stringify(body) : undefined,
-  });
-
-  const data = await res.json().catch(() => ({}));
-
-  if (!res.ok) {
-    const error = new Error(data.error || `Request failed (${res.status})`);
-    error.status = res.status;
+  try {
+    const res = await axios({
+      url: `${BASE}${path}`,
+      method,
+      headers,
+      data: body,
+    });
+    return res.data;
+  } catch (error) {
+    if (error.response) {
+      const err = new Error(error.response.data?.error || `Request failed (${error.response.status})`);
+      err.status = error.response.status;
+      throw err;
+    }
     throw error;
   }
-  return data;
 }
 
 export const api = {
