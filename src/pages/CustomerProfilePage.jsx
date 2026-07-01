@@ -103,6 +103,19 @@ export default function CustomerProfilePage() {
         {customer.sku && <InfoCard label="SKU" value={customer.sku} />}
       </div>
 
+      {customer.order_ids && (
+        <div style={{ marginTop: 14 }}>
+          <div style={{ fontSize: 11, color: "var(--muted)", fontWeight: 600, marginBottom: 6 }}>Order ID(s)</div>
+          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+            {customer.order_ids.split(",").map(oid => (
+              <span key={oid.trim()} style={{ fontSize: 12, fontWeight: 700, background: "var(--teal-light)", color: "var(--teal)", borderRadius: 6, padding: "4px 8px", border: "1px solid var(--teal-border)" }}>
+                {oid.trim()}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
       {customer.household_notes && (
         <div style={{ marginTop: 12, fontSize: 13, color: "var(--slate)", background: "#fff", border: "1px solid var(--card-border)", borderRadius: 10, padding: "10px 14px" }}>
           <strong>Household notes:</strong> {customer.household_notes}
@@ -314,6 +327,7 @@ function EditProfileModal({ customer, onClose, onSaved }) {
     price_sensitivity: customer.price_sensitivity || "",
     product_name: customer.product_name || "",
     sku: customer.sku || "",
+    order_ids: customer.order_ids || "",
   });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -336,6 +350,7 @@ function EditProfileModal({ customer, onClose, onSaved }) {
         price_sensitivity: form.price_sensitivity || null,
         product_name: form.product_name || null,
         sku: form.sku || null,
+        order_ids: form.order_ids || null,
       });
       onSaved();
     } catch (e) {
@@ -381,6 +396,7 @@ function EditProfileModal({ customer, onClose, onSaved }) {
         <ModalField label="Household notes"><input style={inputStyle} value={form.household_notes} onChange={(e) => set("household_notes", e.target.value)} placeholder="e.g. Decisions made jointly with spouse" /></ModalField>
         <ModalField label="Product Name"><input style={inputStyle} value={form.product_name} onChange={(e) => set("product_name", e.target.value)} placeholder="e.g. Cureka Daily Vitamins" /></ModalField>
         <ModalField label="SKU"><input style={inputStyle} value={form.sku} onChange={(e) => set("sku", e.target.value)} placeholder="e.g. CDV-1001" /></ModalField>
+        <ModalField label="Order ID(s) (comma-separated)"><input style={inputStyle} value={form.order_ids} onChange={(e) => set("order_ids", e.target.value)} placeholder="e.g. ORD-01, ORD-02" /></ModalField>
         <ModalField label="Allergies / restrictions"><input style={inputStyle} value={form.allergies_restrictions} onChange={(e) => set("allergies_restrictions", e.target.value)} placeholder="e.g. Allergic to shellfish-derived supplements" /></ModalField>
         <ModalField label="Health conditions (comma-separated)"><input style={inputStyle} value={form.health_conditions} onChange={(e) => set("health_conditions", e.target.value)} placeholder="diabetes, joint pain" /></ModalField>
         <ModalField label="Product preferences (comma-separated)"><input style={inputStyle} value={form.product_preferences} onChange={(e) => set("product_preferences", e.target.value)} placeholder="ayurvedic, sugar-free" /></ModalField>
