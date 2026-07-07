@@ -29,12 +29,28 @@ export function AuthProvider({ children }) {
     return res.user;
   }, []);
 
-  const logout = useCallback(() => {
-    localStorage.removeItem("cureka_token");
-    setUser(null);
+  const logout = useCallback(async () => {
+    try {
+      await api.logout(); // Explicitly call logout endpoint to revoke session
+    } catch (e) {
+      console.warn("Logout request failed, clearing local state anyway");
+    } finally {
+      localStorage.removeItem("cureka_token");
+      setUser(null);
+    }
   }, []);
 
-  return <AuthContext.Provider value={{ user, loading, login, logout }}>{children}</AuthContext.Provider>;
+  const hasPermission = useCallback((module, action) => {
+    if (!user) return false;
+    if (user.role === "super_admin" || user.role === "admin") return true;
+    return user.permissions?.includes(`${module}:${action}`);
+  }, [user]);
+
+  return (
+    <AuthContext.Provider value={{ user, loading, login, logout, hasPermission }}>
+      {children}
+    </AuthContext.Provider>
+  );
 }
 
 export function useAuth() {

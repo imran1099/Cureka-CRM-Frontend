@@ -17,7 +17,12 @@ export default function LoginPage() {
     setBusy(true);
     try {
       const user = await login(email, password);
-      navigate(user.role === "admin" ? "/admin" : "/queue");
+      // Route based on permissions
+      if (user.role === "super_admin" || user.role === "admin" || user.permissions?.includes("reports:view")) {
+        navigate("/admin");
+      } else {
+        navigate("/queue");
+      }
     } catch (err) {
       setError(err.message || "Login failed");
     } finally {
@@ -52,7 +57,7 @@ export default function LoginPage() {
           style={{ background: "#fff", borderRadius: 18, padding: 28, boxShadow: "0 20px 50px rgba(0,0,0,0.18)" }}
         >
           <h1 style={{ fontSize: 18, fontWeight: 700, margin: "0 0 4px" }}>Sign in</h1>
-          <p style={{ fontSize: 13, color: "var(--muted)", margin: "0 0 20px" }}>Use your agent or admin credentials.</p>
+          <p style={{ fontSize: 13, color: "var(--muted)", margin: "0 0 20px" }}>Use your credentials to log in.</p>
 
           <label style={labelStyle}>Email</label>
           <input

@@ -26,10 +26,10 @@ export default function AdminCustomersPage() {
       const params = { page, limit };
       if (query) params.q = query;
       if (segmentFilter !== "all") params.segment = segmentFilter;
-      const [custRes, agentRes] = await Promise.all([api.listCustomers(params), api.listAgents()]);
+      const [custRes, agentRes] = await Promise.all([api.listCustomers(params), api.iam.listUsers({ limit: 1000 })]);
       setCustomers(custRes.customers || []);
       setTotal(custRes.total || 0);
-      setAgents(agentRes.agents || []);
+      setAgents(agentRes.users || []);
     } finally {
       setLoading(false);
     }
@@ -130,7 +130,7 @@ export default function AdminCustomersPage() {
                         style={{ fontSize: 12.5, padding: "5px 8px", borderRadius: 7, border: "1px solid var(--slate-border)" }}
                       >
                         <option value="">Unassigned</option>
-                        {agents.filter((a) => a.role === "agent").map((a) => (
+                        {agents.filter((a) => a.role_slug !== "admin" && a.role_slug !== "super_admin").map((a) => (
                           <option key={a.id} value={a.id}>{a.name}</option>
                         ))}
                       </select>
@@ -242,7 +242,7 @@ function AddCustomerModal({ agents, onClose, onDone }) {
       <Field label="Assign to agent">
         <select style={inputStyle} value={form.assigned_agent_id} onChange={(e) => set("assigned_agent_id", e.target.value)}>
           <option value="">Unassigned</option>
-          {agents.filter((a) => a.role === "agent").map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
+          {agents.filter((a) => a.role_slug !== "admin" && a.role_slug !== "super_admin").map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
         </select>
       </Field>
       {error && <div style={{ color: "var(--coral)", fontSize: 12.5, marginBottom: 10 }}>{error}</div>}
