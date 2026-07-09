@@ -38,7 +38,25 @@ export default function OpportunityWorkspacePage() {
     setLoading(true);
     try {
       const res = await api.cre.getOpportunity(id);
-      setData(res);
+      
+      // Fetch dynamic recommendations for Phase 2
+      let recs = res.recommendations || [];
+      if (res.opportunity && res.opportunity.customer_id) {
+        try {
+          const recRes = await api.cre.getRecommendations(res.opportunity.customer_id);
+          if (recRes.recommendations) {
+            // Transform to match UI structure: { label, product }
+            recs = recRes.recommendations.map(r => ({
+              label: r.recommendation_type === 'fallback' ? 'Suggested Product' : r.recommendation_type,
+              product: `${r.name} (₹${r.price})`
+            }));
+          }
+        } catch (e) {
+          console.warn("Could not load recommendations:", e);
+        }
+      }
+      
+      setData({ ...res, recommendations: recs });
     } catch (err) {
       console.error(err);
     } finally { setLoading(false); }

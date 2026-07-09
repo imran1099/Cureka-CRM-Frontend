@@ -7,12 +7,18 @@ import { TrendingUp, DollarSign, CheckCircle2, XCircle, Target, Layers } from "l
 
 export default function CREDashboard() {
   const [data, setData] = useState(null);
+  const [aiForecast, setAiForecast] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    api.cre.getAnalytics()
-      .then(d => { setData(d); setLoading(false); })
-      .catch(() => setLoading(false));
+    Promise.all([
+      api.cre.getAnalytics(),
+      api.cre.getAIForecast().catch(() => null)
+    ]).then(([d, aiRes]) => {
+      setData(d);
+      if (aiRes?.forecast) setAiForecast(aiRes.forecast);
+      setLoading(false);
+    }).catch(() => setLoading(false));
   }, []);
 
   if (loading) return <div style={{ padding: 40, textAlign: "center" }}>Loading dashboard…</div>;
@@ -28,6 +34,23 @@ export default function CREDashboard() {
       <h1 style={{ fontSize: 24, fontWeight: 800, margin: "0 0 24px 0", color: "var(--ink)", display: "flex", alignItems: "center", gap: 10 }}>
         <TrendingUp size={24} color="var(--teal)" /> Revenue Engine Dashboard
       </h1>
+
+      {/* AI Forecasting Overview (Phase 2 Placeholder) */}
+      {aiForecast && (
+        <div style={{ background: "linear-gradient(to right, #EEF2FF, #F3E8FF)", padding: 20, borderRadius: 12, marginBottom: 28, border: "1px solid #E0E7FF", display: "flex", gap: 20 }}>
+          <div style={{ flex: 1 }}>
+            <h2 style={{ fontSize: 16, fontWeight: 800, margin: "0 0 8px 0", color: "#4338CA", display: "flex", alignItems: "center", gap: 6 }}>
+              <TrendingUp size={16} /> AI Revenue Forecast
+            </h2>
+            <p style={{ margin: 0, fontSize: 13, color: "#3730A3" }}>
+              Expected Monthly Revenue: <strong>₹{aiForecast.expected_monthly_revenue.toLocaleString()}</strong> (Confidence: {aiForecast.confidence_interval})
+            </p>
+            <p style={{ margin: "4px 0 0 0", fontSize: 13, color: "#3730A3" }}>
+              Top Growth Segment: <strong>{aiForecast.top_growth_segment}</strong> | Churn Risk: <strong>{aiForecast.churn_risk_accounts} accounts</strong>
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Executive KPIs */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(175px, 1fr))", gap: 16, marginBottom: 28 }}>

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, Link } from "react-router-dom";
 import { api } from "../lib/api";
 import { SEGMENTS, SOURCES, outcomeMeta, OBJECTION_TYPES, SENTIMENTS, DECISION_STYLES, PRICE_SENSITIVITY, CONTACT_TIMES, SUGGESTED_TAGS } from "../lib/constants";
 import { ArrowLeft, Phone, Mail, MessageSquare, Plus, X, Pencil, AlertTriangle, Tag as TagIcon, HeartPulse, Sparkles, Brain, Check, MapPin, Ticket, Clock, Calendar, ShieldCheck, Activity, Star, Bot, FileText, ShoppingBag, CreditCard } from "lucide-react";
@@ -108,13 +108,17 @@ export default function CustomerProfilePage() {
           </div>
         </div>
         
-        <div style={{ display: "flex", gap: 8 }}>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
           <QuickActionButton icon={Phone} label="Call" color="var(--teal)" />
           <QuickActionButton icon={Mail} label="Email" />
           <QuickActionButton icon={MessageSquare} label="WhatsApp" />
           <QuickActionButton icon={Ticket} label="Create Ticket" />
           <QuickActionButton icon={FileText} label="Add Note" onClick={() => setShowAddNote(true)} />
           <QuickActionButton icon={Calendar} label="Follow-up" onClick={() => setShowAddFollowup(true)} />
+          <Link to={`/journey/${id}`}
+            style={{ display: "flex", alignItems: "center", gap: 5, padding: "7px 12px", background: "#F5F3FF", color: "#6D28D9", border: "1px solid #DDD6FE", borderRadius: 8, textDecoration: "none", fontSize: 12.5, fontWeight: 700 }}>
+            <Clock size={13} /> Journey
+          </Link>
         </div>
       </div>
 

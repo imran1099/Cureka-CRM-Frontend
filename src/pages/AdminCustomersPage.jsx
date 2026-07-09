@@ -12,7 +12,7 @@ export default function AdminCustomersPage() {
   const [loading, setLoading] = useState(true);
   const [showAdd, setShowAdd] = useState(false);
   const [showImport, setShowImport] = useState(false);
-  
+
   // Pagination State
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(50);
@@ -29,6 +29,7 @@ export default function AdminCustomersPage() {
       const [custRes, agentRes] = await Promise.all([api.listCustomers(params), api.iam.listUsers({ limit: 1000 })]);
       setCustomers(custRes.customers || []);
       setTotal(custRes.total || 0);
+      console.log("Agents", agentRes);
       setAgents(agentRes.users || []);
     } finally {
       setLoading(false);
@@ -241,7 +242,7 @@ function AddCustomerModal({ agents, onClose, onDone }) {
       <Field label="Lifetime value (₹)"><input type="number" style={inputStyle} value={form.ltv} onChange={(e) => set("ltv", e.target.value)} /></Field>
       <Field label="Assign to agent">
         <select style={inputStyle} value={form.assigned_agent_id} onChange={(e) => set("assigned_agent_id", e.target.value)}>
-          <option value="">Unassigned</option>
+          <option value="">Unassigned </option>
           {agents.filter((a) => a.role_slug !== "admin" && a.role_slug !== "super_admin").map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
         </select>
       </Field>

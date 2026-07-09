@@ -21,6 +21,11 @@ import CommandCenterAnalytics from "./pages/CommandCenterAnalytics.jsx";
 import PipelinePage from "./pages/PipelinePage.jsx";
 import OpportunityWorkspacePage from "./pages/OpportunityWorkspacePage.jsx";
 import CREDashboard from "./pages/CREDashboard.jsx";
+import CustomerJourneyPage from "./pages/CustomerJourneyPage.jsx";
+import FollowupDashboardPage from "./pages/FollowupDashboardPage.jsx";
+import FollowupNewPage from "./pages/FollowupNewPage.jsx";
+import FollowupAnalyticsPage from "./pages/FollowupAnalyticsPage.jsx";
+import WorkflowRulesPage from "./pages/WorkflowRulesPage.jsx";
 import AppShell from "./components/AppShell.jsx";
 
 function Protected({ children, module, action }) {
@@ -140,6 +145,46 @@ export default function App() {
                 element={
                   <Protected module="calls" action="view">
                     <OpportunityWorkspacePage />
+                  </Protected>
+                }
+              />
+              <Route
+                path="journey/:id"
+                element={
+                  <Protected module="customers" action="view">
+                    <CustomerJourneyPage />
+                  </Protected>
+                }
+              />
+              <Route
+                path="followups"
+                element={
+                  <Protected>
+                    <FollowupDashboardPage />
+                  </Protected>
+                }
+              />
+              <Route
+                path="followups/new"
+                element={
+                  <Protected>
+                    <FollowupNewPage />
+                  </Protected>
+                }
+              />
+              <Route
+                path="followups/analytics"
+                element={
+                  <Protected module="reports" action="view">
+                    <FollowupAnalyticsPage />
+                  </Protected>
+                }
+              />
+              <Route
+                path="followups/rules"
+                element={
+                  <Protected module="settings" action="modify">
+                    <WorkflowRulesPage />
                   </Protected>
                 }
               />

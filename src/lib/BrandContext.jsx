@@ -5,7 +5,7 @@ import { api } from "./api";
 const BrandContext = createContext(null);
 
 export function BrandProvider({ children }) {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [brands, setBrands] = useState([]);
   const [selectedBrandId, setSelectedBrandIdState] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -20,6 +20,8 @@ export function BrandProvider({ children }) {
   }, []);
 
   useEffect(() => {
+    if (authLoading) return; // Wait for auth to complete
+
     if (!user) {
       setBrands([]);
       setSelectedBrandId(null);
@@ -31,7 +33,7 @@ export function BrandProvider({ children }) {
     api.listBrands()
       .then((res) => {
         setBrands(res.brands || []);
-        
+
         // Auto-select logic
         const saved = localStorage.getItem("cureka_selected_brand");
         if (saved && (res.brands.some(b => b.id === saved) || saved === "all" && ["admin", "general_manager", "operations_manager"].includes(user.role))) {
@@ -41,9 +43,12 @@ export function BrandProvider({ children }) {
           if (["admin", "general_manager", "operations_manager"].includes(user.role)) {
             setSelectedBrandIdState("all");
             localStorage.setItem("cureka_selected_brand", "all");
+            console.log("cureka_selected_brand", "all");
+
           } else {
             setSelectedBrandIdState(res.brands[0].id);
             localStorage.setItem("cureka_selected_brand", res.brands[0].id);
+            console.log("cureka_selected_brand", res.brands[0].id);
           }
         }
       })

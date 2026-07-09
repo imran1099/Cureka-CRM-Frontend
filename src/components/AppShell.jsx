@@ -3,7 +3,7 @@ import { Outlet, NavLink, useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../lib/auth.jsx";
 import { useBrand } from "../lib/BrandContext.jsx";
 import { api } from "../lib/api.js";
-import { PhoneCall, LayoutGrid, Users, UserCog, LogOut, ListChecks, Lightbulb, BellRing, X, Briefcase, Shield, Ticket, PhoneOutgoing, LayoutList, Kanban, BarChart3, Settings } from "lucide-react";
+import { PhoneCall, LayoutGrid, Users, UserCog, LogOut, ListChecks, Lightbulb, BellRing, X, Briefcase, Shield, Ticket, PhoneOutgoing, LayoutList, Kanban, BarChart3, Settings, Clock, Zap } from "lucide-react";
 
 export default function AppShell() {
   const { user, logout, hasPermission } = useAuth();
@@ -82,6 +82,7 @@ export default function AppShell() {
                   TICKETS & ENGAGEMENT
                 </div>
                 <NavItem to="/command-center" icon={LayoutList} label="Command Center" />
+                <NavItem to="/followups" icon={Clock} label="Follow-ups" />
                 <NavItem to="/pipeline" icon={Kanban} label="Sales Pipeline" />
                 <NavItem to="/tickets" icon={Ticket} label="All Tickets" />
                 <NavItem to="/calls" icon={PhoneOutgoing} label="Outbound Calls" />
@@ -98,6 +99,8 @@ export default function AppShell() {
                 <NavItem to="/command-center/analytics" icon={BarChart3} label="CSCC Analytics" />
                 <NavItem to="/pipeline/analytics" icon={BarChart3} label="Revenue Analytics" />
                 <NavItem to="/calls/analytics" icon={BarChart3} label="Call Analytics" />
+                <NavItem to="/followups/analytics" icon={BarChart3} label="Follow-up Analytics" />
+                <NavItem to="/followups/rules" icon={Zap} label="Workflow Rules" />
               </>
             )}
 

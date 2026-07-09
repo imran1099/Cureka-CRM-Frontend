@@ -225,6 +225,10 @@ export const api = {
     getAnalytics: () => request("/cre/analytics"),
     getCampaigns: () => request("/cre/campaigns"),
     createCampaign: (payload) => request("/cre/campaigns", { method: "POST", body: payload }),
+    updateCampaign: (id, payload) => request(`/cre/campaigns/${id}`, { method: "PATCH", body: payload }),
+    deleteCampaign: (id) => request(`/cre/campaigns/${id}`, { method: "DELETE" }),
+    getRecommendations: (customerId, limit = 5) => request(`/cre/recommendations/${customerId}?limit=${limit}`),
+    getAIForecast: () => request("/cre/ai-forecast"),
   },
 
   // Admin / Insights
@@ -237,6 +241,41 @@ export const api = {
   getInsightsAttention: () => request("/insights/attention"),
   getInsightsAgents: (range = "7d") => request(`/insights/agents?range=${range}`),
   getInsightsConversion: (range = "7d") => request(`/insights/conversion?range=${range}`),
+
+  // Customer Journey Intelligence Timeline
+  timeline: {
+    getEvents: (customerId, params = {}) => {
+      const qs = new URLSearchParams(params).toString();
+      return request(`/timeline/${customerId}${qs ? `?${qs}` : ""}`);
+    },
+    addNote: (customerId, payload) => request(`/timeline/${customerId}/note`, { method: "POST", body: payload }),
+    getMilestones: (customerId) => request(`/timeline/${customerId}/milestones`),
+    getInsights: (customerId) => request(`/timeline/${customerId}/insights`),
+    getAnalytics: (customerId) => request(`/timeline/${customerId}/analytics`),
+    getEventTypes: () => request("/timeline/event-types/all"),
+  },
+
+  // Intelligent Follow-up & Workflow Automation Engine
+  followups: {
+    getCategories: () => request("/followups/categories"),
+    getDashboardToday: () => request("/followups/dashboard/today"),
+    getStats: (params = {}) => {
+      const qs = new URLSearchParams(params).toString();
+      return request(`/followups/dashboard/stats${qs ? `?${qs}` : ""}`);
+    },
+    list: (params = {}) => {
+      const qs = new URLSearchParams(params).toString();
+      return request(`/followups${qs ? `?${qs}` : ""}`);
+    },
+    get: (id) => request(`/followups/${id}`),
+    create: (payload) => request("/followups", { method: "POST", body: payload }),
+    update: (id, payload) => request(`/followups/${id}`, { method: "PATCH", body: payload }),
+    cancel: (id) => request(`/followups/${id}`, { method: "DELETE" }),
+    getRules: () => request("/followups/rules/list"),
+    createRule: (payload) => request("/followups/rules/create", { method: "POST", body: payload }),
+    updateRule: (id, payload) => request(`/followups/rules/${id}`, { method: "PATCH", body: payload }),
+    deleteRule: (id) => request(`/followups/rules/${id}`, { method: "DELETE" }),
+  },
 };
 
 export { getToken };
