@@ -276,6 +276,90 @@ export const api = {
     updateRule: (id, payload) => request(`/followups/rules/${id}`, { method: "PATCH", body: payload }),
     deleteRule: (id) => request(`/followups/rules/${id}`, { method: "DELETE" }),
   },
+  
+  // Workflow Automation Engine
+  workflowRules: {
+    list: () => request("/followups/workflow-rules"),
+    create: (payload) => request("/followups/workflow-rules", { method: "POST", body: payload }),
+    update: (id, payload) => request(`/followups/workflow-rules/${id}`, { method: "PATCH", body: payload }),
+    delete: (id) => request(`/followups/workflow-rules/${id}`, { method: "DELETE" }),
+  },
+  
+  // Shopify Integration Layer
+  shopify: {
+    getStores: (brandId) => request(`/shopify/stores${brandId ? `?brand_id=${brandId}` : ''}`),
+    connectStore: (payload) => request("/shopify/stores", { method: "POST", body: payload }),
+    startBulkImport: (payload) => request("/shopify/sync/bulk", { method: "POST", body: payload }),
+    getSyncStatus: (storeId, logId) => request(`/shopify/sync/status/${storeId}/${logId}`),
+    getLogs: (storeId) => request(`/shopify/logs/${storeId}`),
+  },
+
+  // Enterprise Knowledge & Learning Hub
+  knowledge: {
+    getCategories: (brandId) => request(`/knowledge/categories${brandId ? `?brand_id=${brandId}` : ''}`),
+    createCategory: (payload) => request("/knowledge/categories", { method: "POST", body: payload }),
+    
+    getArticles: (params = {}) => {
+      const qs = new URLSearchParams(params).toString();
+      return request(`/knowledge/articles${qs ? `?${qs}` : ''}`);
+    },
+    getArticle: (id) => request(`/knowledge/articles/${id}`),
+    createArticle: (payload) => request("/knowledge/articles", { method: "POST", body: payload }),
+    
+    submitForReview: (id) => request(`/knowledge/articles/${id}/submit`, { method: "POST" }),
+    publishArticle: (id) => request(`/knowledge/articles/${id}/publish`, { method: "POST" }),
+    markAsRead: (id) => request(`/knowledge/articles/${id}/read`, { method: "POST" }),
+    
+    getRecommendations: (params = {}) => {
+      const qs = new URLSearchParams(params).toString();
+      return request(`/knowledge/recommend${qs ? `?${qs}` : ''}`);
+    }
+  },
+
+  // Enterprise Business Intelligence & Command Center (BICC)
+  bi: {
+    getDashboard: () => request("/bi/dashboard"),
+    getWidgetData: (payload) => request("/bi/widgets/data", { method: "POST", body: payload }),
+    getInsights: (payload) => request("/bi/insights", { method: "POST", body: payload }),
+  },
+
+  // Reports, Analytics & Decision Intelligence Platform (RADIP)
+  radip: {
+    getReports: () => request("/radip/reports"),
+    executeReport: (id, payload) => request(`/radip/execute/${id}`, { method: "POST", body: payload }),
+    previewBuilder: (payload) => request("/radip/build/preview", { method: "POST", body: payload }),
+    saveCustomReport: (payload) => request("/radip/reports", { method: "POST", body: payload }),
+    exportReport: (id, payload) => request(`/radip/export/${id}`, { method: "POST", body: payload }),
+    scheduleReport: (payload) => request("/radip/schedules", { method: "POST", body: payload }),
+  },
+
+  // Performance Intelligence & KPI Framework (PIKF)
+  pikf: {
+    getMyScore: () => request("/pikf/my-score"),
+    getLeaderboards: (brandId) => request(`/pikf/leaderboards${brandId ? `?brandId=${brandId}` : ''}`),
+    getDefinitions: () => request("/pikf/definitions"),
+    getTeamPerformance: () => request("/pikf/team-performance"),
+    setTarget: (payload) => request("/pikf/targets", { method: "POST", body: payload }),
+    awardManualBadge: (payload) => request("/pikf/badges/manual", { method: "POST", body: payload }),
+  },
+
+  // Business Automation & Workflow Orchestration Engine (BAWOE)
+  bawoe: {
+    getWorkflows: () => request("/bawoe/workflows"),
+    getWorkflow: (id) => request(`/bawoe/workflows/${id}`),
+    saveWorkflow: (payload) => request("/bawoe/workflows", { method: "POST", body: payload }),
+    getExecutions: () => request("/bawoe/executions"),
+    getLogs: (executionId) => request(`/bawoe/executions/${executionId}/logs`),
+    testTrigger: (payload) => request("/bawoe/test", { method: "POST", body: payload })
+  },
+
+  // Unified Notification & Communication Center (UNCC)
+  uncc: {
+    getNotifications: () => request("/uncc"),
+    markAsRead: (id) => request(`/uncc/${id}/read`, { method: "PUT" }),
+    executeQuickAction: (id, payload) => request(`/uncc/${id}/action`, { method: "POST", body: payload })
+  }
 };
 
 export { getToken };
+export default api;

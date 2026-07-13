@@ -26,6 +26,22 @@ import FollowupDashboardPage from "./pages/FollowupDashboardPage.jsx";
 import FollowupNewPage from "./pages/FollowupNewPage.jsx";
 import FollowupAnalyticsPage from "./pages/FollowupAnalyticsPage.jsx";
 import WorkflowRulesPage from "./pages/WorkflowRulesPage.jsx";
+import ShopifyIntegrationPage from "./pages/ShopifyIntegrationPage.jsx";
+import KnowledgeHubPage from "./pages/KnowledgeHubPage.jsx";
+import KnowledgeEditorPage from "./pages/KnowledgeEditorPage.jsx";
+import KnowledgeArticlePage from "./pages/KnowledgeArticlePage.jsx";
+import BIDashboardPage from "./pages/BIDashboardPage.jsx";
+import RADIPHubPage from "./pages/RADIPHubPage.jsx";
+import RADIPViewerPage from "./pages/RADIPViewerPage.jsx";
+import RADIPBuilderPage from "./pages/RADIPBuilderPage.jsx";
+import PIKFScorecardPage from "./pages/PIKFScorecardPage.jsx";
+import PIKFLeaderboardPage from "./pages/PIKFLeaderboardPage.jsx";
+import PIKFManagerPage from "./pages/PIKFManagerPage.jsx";
+import BAWOEHubPage from "./pages/BAWOEHubPage.jsx";
+import BAWOEBuilderPage from "./pages/BAWOEBuilderPage.jsx";
+import BAWOELogViewerPage from "./pages/BAWOELogViewerPage.jsx";
+import UNCCCenterPage from "./pages/UNCCCenterPage.jsx";
+import ESCAMSConsolePage from "./pages/ESCAMSConsolePage.jsx";
 import AppShell from "./components/AppShell.jsx";
 
 function Protected({ children, module, action }) {
@@ -141,6 +157,92 @@ export default function App() {
                 }
               />
               <Route
+                path="notifications"
+                element={
+                  <UNCCCenterPage />
+                }
+              />
+              <Route
+                path="bi-dashboard"
+                element={
+                  <Protected module="reports" action="view">
+                    <BIDashboardPage />
+                  </Protected>
+                }
+              />
+              <Route
+                path="radip"
+                element={
+                  <Protected module="reports" action="view">
+                    <RADIPHubPage />
+                  </Protected>
+                }
+              />
+              <Route
+                path="radip/viewer/:id"
+                element={
+                  <Protected module="reports" action="view">
+                    <RADIPViewerPage />
+                  </Protected>
+                }
+              />
+              <Route
+                path="radip/builder"
+                element={
+                  <Protected module="reports" action="modify">
+                    <RADIPBuilderPage />
+                  </Protected>
+                }
+              />
+              <Route
+                path="pikf/scorecard"
+                element={
+                  <Protected module="reports" action="view">
+                    <PIKFScorecardPage />
+                  </Protected>
+                }
+              />
+              <Route
+                path="pikf/leaderboard"
+                element={
+                  <Protected module="reports" action="view">
+                    <PIKFLeaderboardPage />
+                  </Protected>
+                }
+              />
+              <Route
+                path="pikf/manager"
+                element={
+                  <Protected module="reports" action="modify">
+                    <PIKFManagerPage />
+                  </Protected>
+                }
+              />
+              <Route
+                path="automation"
+                element={
+                  <Protected module="admin" action="view">
+                    <BAWOEHubPage />
+                  </Protected>
+                }
+              />
+              <Route
+                path="automation/builder/:id"
+                element={
+                  <Protected module="admin" action="modify">
+                    <BAWOEBuilderPage />
+                  </Protected>
+                }
+              />
+              <Route
+                path="automation/logs/:id"
+                element={
+                  <Protected module="admin" action="view">
+                    <BAWOELogViewerPage />
+                  </Protected>
+                }
+              />
+              <Route
                 path="pipeline/:id"
                 element={
                   <Protected module="calls" action="view">
@@ -185,6 +287,30 @@ export default function App() {
                 element={
                   <Protected module="settings" action="modify">
                     <WorkflowRulesPage />
+                  </Protected>
+                }
+              />
+              <Route
+                path="knowledge"
+                element={
+                  <Protected module="knowledge" action="view">
+                    <KnowledgeHubPage />
+                  </Protected>
+                }
+              />
+              <Route
+                path="knowledge/editor"
+                element={
+                  <Protected module="knowledge" action="modify">
+                    <KnowledgeEditorPage />
+                  </Protected>
+                }
+              />
+              <Route
+                path="knowledge/article/:id"
+                element={
+                  <Protected module="knowledge" action="view">
+                    <KnowledgeArticlePage />
                   </Protected>
                 }
               />
@@ -241,6 +367,22 @@ export default function App() {
                 element={
                   <Protected module="settings" action="modify">
                     <BrandManagementPage />
+                  </Protected>
+                }
+              />
+              <Route
+                path="admin/security"
+                element={
+                  <Protected module="settings" action="modify">
+                    <ESCAMSConsolePage />
+                  </Protected>
+                }
+              />
+              <Route
+                path="admin/integrations/shopify"
+                element={
+                  <Protected module="settings" action="modify">
+                    <ShopifyIntegrationPage />
                   </Protected>
                 }
               />

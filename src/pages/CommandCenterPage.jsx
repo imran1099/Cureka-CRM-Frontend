@@ -6,6 +6,7 @@ import {
   Star, Users, PhoneCall, User, TicketIcon, ChevronRight, CheckCircle2,
   Calendar, Clock, TrendingUp, RotateCcw, PackageX, Heart
 } from "lucide-react";
+import ContextualKnowledgeWidget from "../components/ContextualKnowledgeWidget.jsx";
 
 const ICON_MAP = {
   MessageSquare: MessageSquare, ShoppingCart, Truck, AlertTriangle,
@@ -178,6 +179,8 @@ export default function CommandCenterPage() {
                 </div>
               )}
             </div>
+            
+            <ContextualKnowledgeWidget intent={selectedTask.reason} />
           </div>
 
           {/* Quick Actions */}

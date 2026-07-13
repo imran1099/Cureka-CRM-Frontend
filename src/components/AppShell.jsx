@@ -3,7 +3,8 @@ import { Outlet, NavLink, useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../lib/auth.jsx";
 import { useBrand } from "../lib/BrandContext.jsx";
 import { api } from "../lib/api.js";
-import { PhoneCall, LayoutGrid, Users, UserCog, LogOut, ListChecks, Lightbulb, BellRing, X, Briefcase, Shield, Ticket, PhoneOutgoing, LayoutList, Kanban, BarChart3, Settings, Clock, Zap } from "lucide-react";
+import NotificationBell from "./NotificationBell.jsx";
+import { PhoneCall, LayoutGrid, Users, UserCog, LogOut, ListChecks, Lightbulb, BellRing, X, Briefcase, Shield, Ticket, PhoneOutgoing, LayoutList, Kanban, BarChart3, Settings, Clock, Zap, ShoppingBag, BookOpen, Star, Trophy, Workflow, Bell, ShieldAlert } from "lucide-react";
 
 export default function AppShell() {
   const { user, logout, hasPermission } = useAuth();
@@ -81,7 +82,16 @@ export default function AppShell() {
                 <div style={{ fontSize: 11, fontWeight: 700, opacity: 0.55, letterSpacing: "0.05em", margin: "16px 10px 4px" }}>
                   TICKETS & ENGAGEMENT
                 </div>
+                <NavItem to="/knowledge" icon={BookOpen} label="Knowledge Hub" />
                 <NavItem to="/command-center" icon={LayoutList} label="Command Center" />
+                
+                <div style={{ fontSize: 11, fontWeight: 700, opacity: 0.55, letterSpacing: "0.05em", margin: "16px 10px 4px" }}>
+                  PERFORMANCE
+                </div>
+                <NavItem to="/pikf/scorecard" icon={Star} label="My Scorecard" />
+                <NavItem to="/pikf/leaderboard" icon={Trophy} label="Leaderboards" />
+                <NavItem to="/pikf/manager" icon={Users} label="Team Performance" />
+                
                 <NavItem to="/followups" icon={Clock} label="Follow-ups" />
                 <NavItem to="/pipeline" icon={Kanban} label="Sales Pipeline" />
                 <NavItem to="/tickets" icon={Ticket} label="All Tickets" />
@@ -94,13 +104,21 @@ export default function AppShell() {
                 <div style={{ fontSize: 11, fontWeight: 700, opacity: 0.55, letterSpacing: "0.05em", margin: "16px 10px 4px" }}>
                   MANAGEMENT
                 </div>
-                <NavItem to="/admin" icon={LayoutGrid} label="Dashboard" />
+                <NavItem to="/bi-dashboard" icon={LayoutGrid} label="BI Command Center" />
+                <NavItem to="/radip" icon={BarChart3} label="Reporting & Analytics" />
+                <NavItem to="/admin" icon={LayoutGrid} label="Legacy Admin" />
                 <NavItem to="/admin/insights" icon={Lightbulb} label="Insights" />
                 <NavItem to="/command-center/analytics" icon={BarChart3} label="CSCC Analytics" />
                 <NavItem to="/pipeline/analytics" icon={BarChart3} label="Revenue Analytics" />
                 <NavItem to="/calls/analytics" icon={BarChart3} label="Call Analytics" />
                 <NavItem to="/followups/analytics" icon={BarChart3} label="Follow-up Analytics" />
                 <NavItem to="/followups/rules" icon={Zap} label="Workflow Rules" />
+                {hasPermission("admin", "view") && (
+                  <NavItem to="/automation" icon={Workflow} label="Automation Studio" />
+                )}
+                {hasPermission("admin", "view") && (
+                  <NavItem to="/admin" icon={Shield} label="Admin Settings" />
+                )}
               </>
             )}
 
@@ -119,6 +137,8 @@ export default function AppShell() {
                   <>
                     <NavItem to="/admin/brands" icon={Briefcase} label="Brands" />
                     <NavItem to="/admin/tickets-config" icon={Settings} label="Ticket Settings" />
+                    <NavItem to="/admin/integrations/shopify" icon={ShoppingBag} label="Shopify Integration" />
+                    <NavItem to="/admin/security" icon={ShieldAlert} label="Security & Audit" />
                   </>
                 )}
               </>
@@ -126,13 +146,18 @@ export default function AppShell() {
           </nav>
 
           <div style={{ borderTop: "1px solid rgba(255,255,255,0.15)", paddingTop: 14, marginTop: 14 }}>
-            {!isManagement && (
-              <div style={{ fontSize: 11.5, opacity: 0.65, padding: "0 6px", marginBottom: 4 }}>
-                Brand: {brands.find(b => b.id === selectedBrandId)?.name || "N/A"}
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0 6px", marginBottom: 12 }}>
+              <div>
+                {!isManagement && (
+                  <div style={{ fontSize: 11.5, opacity: 0.65, marginBottom: 4 }}>
+                    Brand: {brands.find(b => b.id === selectedBrandId)?.name || "N/A"}
+                  </div>
+                )}
+                <div style={{ fontSize: 13, fontWeight: 600 }}>{user?.name}</div>
+                <div style={{ fontSize: 11.5, opacity: 0.65, textTransform: "capitalize" }}>{user?.role.replace('_', ' ')}</div>
               </div>
-            )}
-            <div style={{ fontSize: 13, fontWeight: 600, padding: "0 6px" }}>{user?.name}</div>
-            <div style={{ fontSize: 11.5, opacity: 0.65, padding: "0 6px", marginBottom: 10, textTransform: "capitalize" }}>{user?.role.replace('_', ' ')}</div>
+            </div>
+            
             <button
               onClick={handleLogout}
               style={{
@@ -154,8 +179,27 @@ export default function AppShell() {
           </div>
         </aside>
 
-        <main style={{ flex: 1, background: "var(--bg)", height: isManagement ? "calc(100vh - 60px)" : "100vh", overflowY: "auto", position: "relative" }}>
-          <Outlet />
+        <main style={{ flex: 1, background: "var(--bg)", height: isManagement ? "calc(100vh - 60px)" : "100vh", overflowY: "auto", position: "relative", display: "flex", flexDirection: "column" }}>
+          <header style={{ 
+            background: "#fff", 
+            borderBottom: "1px solid var(--card-border)", 
+            padding: "16px 32px", 
+            display: "flex", 
+            justifyContent: "space-between", 
+            alignItems: "center",
+            position: "sticky",
+            top: 0,
+            zIndex: 100
+          }}>
+            <div style={{ fontSize: 16, fontWeight: 700, color: "var(--ink)" }}>Customer Experience Platform (CXP)</div>
+            <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+              <NotificationBell />
+            </div>
+          </header>
+          
+          <div style={{ flex: 1, overflowY: "auto" }}>
+            <Outlet />
+          </div>
 
           {dueCallbacks.length > 0 && (
             <div style={{ position: "fixed", top: 24, right: 24, zIndex: 9999, display: "flex", flexDirection: "column", gap: 8 }}>

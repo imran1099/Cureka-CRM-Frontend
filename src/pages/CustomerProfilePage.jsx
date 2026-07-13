@@ -4,6 +4,7 @@ import { api } from "../lib/api";
 import { SEGMENTS, SOURCES, outcomeMeta, OBJECTION_TYPES, SENTIMENTS, DECISION_STYLES, PRICE_SENSITIVITY, CONTACT_TIMES, SUGGESTED_TAGS } from "../lib/constants";
 import { ArrowLeft, Phone, Mail, MessageSquare, Plus, X, Pencil, AlertTriangle, Tag as TagIcon, HeartPulse, Sparkles, Brain, Check, MapPin, Ticket, Clock, Calendar, ShieldCheck, Activity, Star, Bot, FileText, ShoppingBag, CreditCard } from "lucide-react";
 import { useAuth } from "../lib/auth";
+import MaskedField from "../components/MaskedField";
 
 export default function CustomerProfilePage() {
   const { id } = useParams();
@@ -100,8 +101,8 @@ export default function CustomerProfilePage() {
               {customer.do_not_call === 1 && <span style={{ fontSize: 10, fontWeight: 800, background: "var(--coral-light)", color: "var(--coral)", padding: "3px 6px", borderRadius: 4 }}>DNC</span>}
             </div>
             <div className="tabular" style={{ fontSize: 13, color: "var(--muted)", marginTop: 2, display: "flex", gap: 12 }}>
-              <span style={{ display: "flex", alignItems: "center", gap: 4 }}><Phone size={12} /> {customer.phone}</span>
-              {customer.email && <span style={{ display: "flex", alignItems: "center", gap: 4 }}><Mail size={12} /> {customer.email}</span>}
+              <span style={{ display: "flex", alignItems: "center", gap: 4 }}><Phone size={12} /> <MaskedField type="phone" value={customer.phone} /></span>
+              {customer.email && <span style={{ display: "flex", alignItems: "center", gap: 4 }}><Mail size={12} /> <MaskedField type="email" value={customer.email} /></span>}
               <span style={{ display: "flex", alignItems: "center", gap: 4 }}><TagIcon size={12} /> CRM ID: {customer.id}</span>
               {customer.shopify_customer_id && <span style={{ display: "flex", alignItems: "center", gap: 4 }}><ShoppingBag size={12} /> Shopify ID: {customer.shopify_customer_id}</span>}
             </div>
@@ -152,6 +153,19 @@ export default function CustomerProfilePage() {
             {(!customer.brandLinks || customer.brandLinks.length === 0) && <span style={{ fontSize: 12, color: "var(--muted)" }}>No brands</span>}
           </div>
 
+          <h3 style={{ fontSize: 14, fontWeight: 700, margin: "0 0 12px 0", color: "var(--slate)" }}>Shopify Integrations</h3>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 20 }}>
+            {customer.shopifyProfiles && customer.shopifyProfiles.map(sp => (
+              <div key={sp.id} style={{ background: "#F5F3FF", border: "1px solid #DDD6FE", borderRadius: 8, padding: "10px", borderLeft: "3px solid #6D28D9" }}>
+                <div style={{ fontSize: 12, fontWeight: 600, color: "#6D28D9", display: "flex", alignItems: "center", gap: 4 }}>
+                  <ShoppingBag size={12} /> Shopify ID: {sp.id}
+                </div>
+                {sp.email && <div style={{ fontSize: 12, marginTop: 4, color: "var(--slate)" }}>Email: <MaskedField type="email" value={sp.email} /></div>}
+              </div>
+            ))}
+            {(!customer.shopifyProfiles || customer.shopifyProfiles.length === 0) && <span style={{ fontSize: 12, color: "var(--muted)" }}>Not synced with Shopify.</span>}
+          </div>
+
           <h3 style={{ fontSize: 14, fontWeight: 700, margin: "0 0 12px 0", color: "var(--slate)" }}>Pending Follow-ups</h3>
           <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 20 }}>
             {followups.map(f => (
@@ -193,8 +207,9 @@ export default function CustomerProfilePage() {
           {/* KPI Row */}
           <div style={{ display: "flex", gap: 12, marginBottom: 24, flexWrap: "wrap" }}>
             <KPICard label="Health Score" value={`${customer.score || customer.health_score || 0}/100`} color={customer.score > 50 ? "var(--teal)" : "var(--coral)"} icon={HeartPulse} />
-            <KPICard label="Lifetime Value" value={`₹${Number(customer.ltv).toLocaleString("en-IN")}`} icon={CreditCard} />
-            <KPICard label="Total Orders" value={kpis.total_orders} icon={ShoppingBag} />
+            <KPICard label="Lifetime Value (CRM)" value={`₹${Number(customer.ltv).toLocaleString("en-IN")}`} icon={CreditCard} />
+            {customer.shopifyLTV > 0 && <KPICard label="Lifetime Value (Shopify)" value={`₹${Number(customer.shopifyLTV).toLocaleString("en-IN")}`} icon={ShoppingBag} />}
+            <KPICard label="Total Orders" value={kpis.total_orders + (customer.shopifyOrders?.length || 0)} icon={ShoppingBag} />
             <KPICard label="Avg Order Value" value={`₹${kpis.aov.toLocaleString("en-IN")}`} icon={Activity} />
             <KPICard label="Open Tickets" value={kpis.open_tickets} color={kpis.open_tickets > 0 ? "var(--coral)" : "var(--muted)"} icon={Ticket} />
           </div>
