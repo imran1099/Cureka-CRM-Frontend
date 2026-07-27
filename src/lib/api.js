@@ -137,6 +137,7 @@ export const api = {
 
   // Brands
   listBrands: () => request("/brands"),
+  getBrands: () => request("/brands"),
   createBrand: (payload) => request("/brands", { method: "POST", body: payload }),
   updateBrand: (id, payload) => request(`/brands/${id}`, { method: "PATCH", body: payload }),
   deleteBrand: (id) => request(`/brands/${id}`, { method: "DELETE" }),

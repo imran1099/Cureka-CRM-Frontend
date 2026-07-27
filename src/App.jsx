@@ -66,11 +66,16 @@ function FullScreenLoader() {
   );
 }
 
+import { ThemeProvider } from "./lib/ThemeContext.jsx";
+import { ToastProvider } from "./components/Toast.jsx";
+
 export default function App() {
   return (
-    <AuthProvider>
-      <BrandProvider>
-        <BrowserRouter>
+    <ThemeProvider>
+      <ToastProvider>
+        <AuthProvider>
+          <BrandProvider>
+            <BrowserRouter>
           <Routes>
             <Route path="/login" element={<LoginPage />} />
             <Route
@@ -391,5 +396,7 @@ export default function App() {
         </BrowserRouter>
       </BrandProvider>
     </AuthProvider>
+  </ToastProvider>
+</ThemeProvider>
   );
 }

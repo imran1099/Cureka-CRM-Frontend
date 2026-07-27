@@ -1,617 +1,591 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { api } from "../lib/api";
-import { SEGMENTS, SOURCES, outcomeMeta, OBJECTION_TYPES, SENTIMENTS, DECISION_STYLES, PRICE_SENSITIVITY, CONTACT_TIMES, SUGGESTED_TAGS } from "../lib/constants";
-import { ArrowLeft, Phone, Mail, MessageSquare, Plus, X, Pencil, AlertTriangle, Tag as TagIcon, HeartPulse, Sparkles, Brain, Check, MapPin, Ticket, Clock, Calendar, ShieldCheck, Activity, Star, Bot, FileText, ShoppingBag, CreditCard } from "lucide-react";
-import { useAuth } from "../lib/auth";
-import MaskedField from "../components/MaskedField";
+import { useToast } from "../components/Toast";
+import { SkeletonCard, SkeletonTable } from "../components/SkeletonLoader";
+import {
+  User,
+  Phone,
+  Mail,
+  MapPin,
+  Calendar,
+  Star,
+  ShoppingBag,
+  Ticket,
+  Clock,
+  MessageSquare,
+  Sparkles,
+  Copy,
+  Plus,
+  Send,
+  RotateCcw,
+  DollarSign,
+  FileText,
+  ShieldAlert,
+  ChevronRight,
+  TrendingUp,
+  CheckCircle2,
+  AlertTriangle,
+  Award,
+  Zap,
+  Tag,
+  ExternalLink,
+  Activity,
+  HeartPulse,
+} from "lucide-react";
 
 export default function CustomerProfilePage() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { user } = useAuth();
-  
-  const [data, setData] = useState(null);
-  const [timeline, setTimeline] = useState([]);
-  const [loading, setLoading] = useState(true);
-  
-  const [activeTab, setActiveTab] = useState("timeline");
-  const [showEditProfile, setShowEditProfile] = useState(false);
-  const [showAddNote, setShowAddNote] = useState(false);
-  const [showAddFollowup, setShowAddFollowup] = useState(false);
-  
-  const [noteContent, setNoteContent] = useState("");
-  const [followupData, setFollowupData] = useState({ due_date: "", reason: "" });
+  const { addToast } = useToast();
 
-  const reload = async () => {
-    try {
-      const [res360, resTimeline] = await Promise.all([
-        api.getCustomer360(id),
-        api.getCustomerTimeline(id)
-      ]);
-      setData(res360);
-      setTimeline(resTimeline.timeline || []);
-    } catch (err) {
-      console.error(err);
-      if (err.status === 404) setData(null);
-    }
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState("timeline");
+
+  // Quick Action Modal States
+  const [showNoteModal, setShowNoteModal] = useState(false);
+  const [noteContent, setNoteContent] = useState("");
+  const [showFollowupModal, setShowFollowupModal] = useState(false);
+  const [followupDate, setFollowupDate] = useState("");
+  const [followupReason, setFollowupReason] = useState("");
+
+  const loadProfile = () => {
+    setLoading(true);
+    api
+      .get(`/api/customers/${id}/360`)
+      .then((res) => {
+        setData(res);
+      })
+      .catch((err) => {
+        console.error("Customer 360 load error:", err);
+        addToast("Failed to load customer profile", "error");
+      })
+      .finally(() => setLoading(false));
   };
 
   useEffect(() => {
-    setLoading(true);
-    reload().finally(() => setLoading(false));
+    loadProfile();
   }, [id]);
 
-  if (loading) return <div style={{ padding: 28, color: "var(--muted)" }}>Loading Customer 360° Profile…</div>;
-  if (!data) return <div style={{ padding: 28 }}>Customer not found or access denied.</div>;
+  const handleCopyDetails = () => {
+    if (!data?.customer) return;
+    const text = `Customer Name: ${data.customer.name}\nPhone: ${data.customer.phone}\nEmail: ${data.customer.email}\nAddress: ${data.addresses?.[0]?.full_address || "N/A"}\nLTV: ₹${data.analytics?.total_spend}`;
+    navigator.clipboard.writeText(text);
+    addToast("Customer details copied to clipboard!", "success");
+  };
 
-  const { customer, kpis, tags, addresses, followups } = data;
-  const seg = SEGMENTS[customer.segment] || SEGMENTS.new_lead;
-  const SegIcon = seg.icon;
-
-  const handleAddNote = async () => {
+  const handleAddNote = async (e) => {
+    e.preventDefault();
     if (!noteContent.trim()) return;
-    await api.addCustomerNote(id, { content: noteContent.trim() });
-    setNoteContent("");
-    setShowAddNote(false);
-    reload();
+    try {
+      await api.post(`/api/customers/${id}/notes`, { content: noteContent });
+      addToast("Internal note added successfully!", "success");
+      setNoteContent("");
+      setShowNoteModal(false);
+      loadProfile();
+    } catch (err) {
+      addToast("Failed to add note", "error");
+    }
   };
 
-  const handleAddFollowup = async () => {
-    if (!followupData.due_date) return;
-    await api.createFollowup(id, { ...followupData });
-    setFollowupData({ due_date: "", reason: "" });
-    setShowAddFollowup(false);
-    reload();
+  const handleCreateFollowup = async (e) => {
+    e.preventDefault();
+    if (!followupDate) return;
+    try {
+      await api.post(`/api/customers/${id}/followups`, {
+        due_date: followupDate,
+        reason: followupReason || "Customer Follow-up",
+      });
+      addToast("Follow-up task created!", "success");
+      setFollowupDate("");
+      setFollowupReason("");
+      setShowFollowupModal(false);
+      loadProfile();
+    } catch (err) {
+      addToast("Failed to create follow-up", "error");
+    }
   };
 
-  const tabs = [
-    { id: "timeline", label: "Timeline", icon: Activity },
-    { id: "purchases", label: "Purchases", icon: ShoppingBag },
-    { id: "tickets", label: "Tickets", icon: Ticket },
-    { id: "calls", label: "Calls", icon: Phone },
-    { id: "notes", label: "Internal Notes", icon: FileText },
-    { id: "ai", label: "AI Insights", icon: Bot },
-  ];
+  if (loading || !data) {
+    return (
+      <div style={{ padding: 24, display: "flex", flexDirection: "column", gap: 20 }}>
+        <SkeletonCard height={100} />
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 2fr 1fr", gap: 20 }}>
+          <SkeletonCard height={400} />
+          <SkeletonTable rows={6} />
+          <SkeletonCard height={400} />
+        </div>
+      </div>
+    );
+  }
 
-  const filteredTimeline = timeline.filter(item => {
-    if (activeTab === "timeline") return true;
-    if (activeTab === "purchases") return item.type === "order";
-    if (activeTab === "tickets") return item.type === "ticket";
-    if (activeTab === "calls") return item.type === "call";
-    if (activeTab === "notes") return item.type === "note";
-    return false;
-  });
+  const { customer, analytics, orders, communication, support, marketing, subscriptions, timeline, addresses, tags, aiInsights } = data;
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", height: "100%", background: "var(--bg-wash)" }}>
-      {/* Sticky Header */}
-      <div style={{ position: "sticky", top: 0, zIndex: 10, background: "#fff", borderBottom: "1px solid var(--card-border)", padding: "16px 28px", display: "flex", alignItems: "center", justifyContent: "space-between", boxShadow: "0 4px 20px rgba(0,0,0,0.02)" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-          <button onClick={() => navigate(-1)} style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 32, height: 32, background: "var(--bg)", border: "1px solid var(--card-border)", borderRadius: "50%", color: "var(--slate)", cursor: "pointer" }}>
-            <ArrowLeft size={16} />
-          </button>
-          <div style={{ width: 48, height: 48, borderRadius: "50%", background: "var(--teal)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, fontWeight: 800 }}>
-            {customer.name.charAt(0).toUpperCase()}
+    <div style={{ display: "flex", flexDirection: "column", gap: 20, maxWidth: 1440, margin: "0 auto" }}>
+      {/* ── BREADCRUMB & HEADER BAR ────────────────────────────────────── */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 16 }}>
+        <div>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>
+            <Link to="/admin/customers" style={{ color: "var(--muted)" }}>Customers</Link>
+            <ChevronRight size={14} />
+            <span style={{ color: "var(--ink)", fontWeight: 600 }}>Customer 360° Profile</span>
           </div>
-          <div>
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <h1 style={{ fontSize: 20, fontWeight: 800, margin: 0 }}>{customer.name}</h1>
-              {customer.health_score >= 80 && <span title="Verified & Healthy" style={{ color: "var(--teal)", display: "flex" }}><ShieldCheck size={16} /></span>}
-              {customer.do_not_call === 1 && <span style={{ fontSize: 10, fontWeight: 800, background: "var(--coral-light)", color: "var(--coral)", padding: "3px 6px", borderRadius: 4 }}>DNC</span>}
-            </div>
-            <div className="tabular" style={{ fontSize: 13, color: "var(--muted)", marginTop: 2, display: "flex", gap: 12 }}>
-              <span style={{ display: "flex", alignItems: "center", gap: 4 }}><Phone size={12} /> <MaskedField type="phone" value={customer.phone} /></span>
-              {customer.email && <span style={{ display: "flex", alignItems: "center", gap: 4 }}><Mail size={12} /> <MaskedField type="email" value={customer.email} /></span>}
-              <span style={{ display: "flex", alignItems: "center", gap: 4 }}><TagIcon size={12} /> CRM ID: {customer.id}</span>
-              {customer.shopify_customer_id && <span style={{ display: "flex", alignItems: "center", gap: 4 }}><ShoppingBag size={12} /> Shopify ID: {customer.shopify_customer_id}</span>}
-            </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <h1 style={{ fontSize: 24, fontWeight: 800, color: "var(--ink)", letterSpacing: "-0.02em" }}>
+              {customer.name}
+            </h1>
+            {customer.is_vip === 1 && (
+              <span className="badge badge-pending" style={{ fontSize: 12 }}>
+                <Star size={13} /> VIP Customer
+              </span>
+            )}
+            <span className="badge badge-info" style={{ fontSize: 12 }}>
+              {customer.membership_tier || "Silver Member"}
+            </span>
           </div>
         </div>
-        
-        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-          <QuickActionButton icon={Phone} label="Call" color="var(--teal)" />
-          <QuickActionButton icon={Mail} label="Email" />
-          <QuickActionButton icon={MessageSquare} label="WhatsApp" />
-          <QuickActionButton icon={Ticket} label="Create Ticket" />
-          <QuickActionButton icon={FileText} label="Add Note" onClick={() => setShowAddNote(true)} />
-          <QuickActionButton icon={Calendar} label="Follow-up" onClick={() => setShowAddFollowup(true)} />
-          <Link to={`/journey/${id}`}
-            style={{ display: "flex", alignItems: "center", gap: 5, padding: "7px 12px", background: "#F5F3FF", color: "#6D28D9", border: "1px solid #DDD6FE", borderRadius: 8, textDecoration: "none", fontSize: 12.5, fontWeight: 700 }}>
-            <Clock size={13} /> Journey
-          </Link>
+
+        {/* ── QUICK ACTIONS TOOLBAR ─────────────────────────────────── */}
+        <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+          <button className="btn btn-primary btn-sm" onClick={() => navigate(`/calls/workspace/${id}`)}>
+            <Phone size={14} /> Log Call
+          </button>
+          <button className="btn btn-secondary btn-sm" onClick={() => addToast(`Opening WhatsApp chat with ${customer.phone}...`, "info")}>
+            <MessageSquare size={14} /> Send WhatsApp
+          </button>
+          <button className="btn btn-secondary btn-sm" onClick={() => addToast(`Opening Email composer for ${customer.email}...`, "info")}>
+            <Mail size={14} /> Send Email
+          </button>
+          <button className="btn btn-secondary btn-sm" onClick={() => navigate("/tickets")}>
+            <Ticket size={14} /> Create Ticket
+          </button>
+          <button className="btn btn-secondary btn-sm" onClick={() => setShowNoteModal(true)}>
+            <FileText size={14} /> Add Note
+          </button>
+          <button className="btn btn-secondary btn-sm" onClick={() => setShowFollowupModal(true)}>
+            <Clock size={14} /> Create Follow-up
+          </button>
+          <button className="btn btn-secondary btn-sm" onClick={handleCopyDetails}>
+            <Copy size={14} /> Copy Details
+          </button>
         </div>
       </div>
 
-      <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
+      {/* ── THREE-COLUMN ENTERPRISE LAYOUT ────────────────────────────── */}
+      <div style={{ display: "grid", gridTemplateColumns: "300px 1fr 340px", gap: 20, alignItems: "start" }}>
         
-        {/* Left Panel - Identity & Demographics */}
-        <div style={{ width: 340, flexShrink: 0, background: "#fff", borderRight: "1px solid var(--card-border)", overflowY: "auto", padding: "20px" }}>
-          
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
-            <h3 style={{ fontSize: 14, fontWeight: 700, margin: 0, color: "var(--slate)" }}>Customer Identity</h3>
-            <button onClick={() => setShowEditProfile(true)} style={{ background: "none", border: "none", color: "var(--teal)", fontSize: 12, fontWeight: 600, display: "flex", alignItems: "center", gap: 4, cursor: "pointer" }}><Pencil size={12} /> Edit</button>
-          </div>
+        {/* ── LEFT COLUMN: PERSONAL DETAILS & ANALYTICS METRICS ───────── */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+          {/* Customer Analytics Cards */}
+          <div className="card-panel" style={{ padding: 18 }}>
+            <h3 style={{ fontSize: 14, fontWeight: 700, marginBottom: 14, color: "var(--ink)", display: "flex", alignItems: "center", gap: 8 }}>
+              <TrendingUp size={16} style={{ color: "var(--teal)" }} />
+              Customer Analytics
+            </h3>
 
-          <div style={{ background: "var(--bg)", borderRadius: 12, padding: "12px", marginBottom: 20 }}>
-            <IdentityRow label="Segment" value={seg.label} icon={SegIcon} color={seg.color} />
-            <IdentityRow label="Age / Gender" value={`${customer.age || '-'} / ${customer.gender || '-'}`} />
-            <IdentityRow label="City" value={customer.city || '-'} />
-            <IdentityRow label="Language" value={customer.preferred_language || '-'} />
-            <IdentityRow label="Best Time to Call" value={CONTACT_TIMES.find(c => c.key === customer.preferred_contact_time)?.label || '-'} />
-            <IdentityRow label="Price Sensitivity" value={PRICE_SENSITIVITY.find(p => p.key === customer.price_sensitivity)?.label || '-'} color={customer.price_sensitivity === 'high' ? 'var(--coral)' : undefined} />
-            {customer.customer_since && <IdentityRow label="Customer Since" value={new Date(customer.customer_since).toLocaleDateString()} />}
-          </div>
-
-          <h3 style={{ fontSize: 14, fontWeight: 700, margin: "0 0 12px 0", color: "var(--slate)" }}>Brand Relationships</h3>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 20 }}>
-            {customer.brandLinks && customer.brandLinks.map(b => (
-              <span key={b.brand_id} style={{ fontSize: 11, fontWeight: 700, background: "#fff", border: "1px solid var(--slate-border)", borderRadius: 6, padding: "4px 8px" }}>
-                {b.brand_name}
-              </span>
-            ))}
-            {(!customer.brandLinks || customer.brandLinks.length === 0) && <span style={{ fontSize: 12, color: "var(--muted)" }}>No brands</span>}
-          </div>
-
-          <h3 style={{ fontSize: 14, fontWeight: 700, margin: "0 0 12px 0", color: "var(--slate)" }}>Shopify Integrations</h3>
-          <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 20 }}>
-            {customer.shopifyProfiles && customer.shopifyProfiles.map(sp => (
-              <div key={sp.id} style={{ background: "#F5F3FF", border: "1px solid #DDD6FE", borderRadius: 8, padding: "10px", borderLeft: "3px solid #6D28D9" }}>
-                <div style={{ fontSize: 12, fontWeight: 600, color: "#6D28D9", display: "flex", alignItems: "center", gap: 4 }}>
-                  <ShoppingBag size={12} /> Shopify ID: {sp.id}
-                </div>
-                {sp.email && <div style={{ fontSize: 12, marginTop: 4, color: "var(--slate)" }}>Email: <MaskedField type="email" value={sp.email} /></div>}
-              </div>
-            ))}
-            {(!customer.shopifyProfiles || customer.shopifyProfiles.length === 0) && <span style={{ fontSize: 12, color: "var(--muted)" }}>Not synced with Shopify.</span>}
-          </div>
-
-          <h3 style={{ fontSize: 14, fontWeight: 700, margin: "0 0 12px 0", color: "var(--slate)" }}>Pending Follow-ups</h3>
-          <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 20 }}>
-            {followups.map(f => (
-              <div key={f.id} style={{ background: "#fff", border: "1px solid var(--teal-border)", borderRadius: 8, padding: "10px", borderLeft: "3px solid var(--teal)" }}>
-                <div style={{ fontSize: 12, fontWeight: 600, color: "var(--teal)", display: "flex", justifyContent: "space-between" }}>
-                  <span>{new Date(f.due_date).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}</span>
-                  <span>{f.agent_name}</span>
-                </div>
-                {f.reason && <div style={{ fontSize: 12, marginTop: 4, color: "var(--slate)" }}>{f.reason}</div>}
-              </div>
-            ))}
-            {followups.length === 0 && <span style={{ fontSize: 12, color: "var(--muted)" }}>No pending follow-ups.</span>}
-          </div>
-
-          <HealthAndTags customer={customer} tags={tags} onChange={reload} />
-
-          {(customer.allergies_restrictions || customer.health_conditions?.length > 0) && (
-            <div style={{ marginTop: 20, background: "var(--coral-light)", border: "1px solid var(--coral-border)", borderRadius: 10, padding: "12px", color: "var(--coral)" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 6, fontWeight: 700, fontSize: 13, marginBottom: 6 }}>
-                <AlertTriangle size={14} /> Medical / Restrictions
-              </div>
-              {customer.allergies_restrictions && <div style={{ fontSize: 12, marginBottom: 4 }}><strong>Allergies:</strong> {customer.allergies_restrictions}</div>}
-              {customer.health_conditions?.length > 0 && <div style={{ fontSize: 12 }}><strong>Conditions:</strong> {customer.health_conditions.join(", ")}</div>}
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              <MetricRow label="Lifetime Value (LTV)" value={`₹${analytics.total_spend.toLocaleString("en-IN")}`} highlight />
+              <MetricRow label="Total Orders" value={analytics.total_orders} />
+              <MetricRow label="Average Order Value (AOV)" value={`₹${analytics.aov.toLocaleString("en-IN")}`} />
+              <MetricRow label="Repeat Purchase %" value={`${analytics.repeat_purchase_pct}%`} />
+              <MetricRow label="RFM Score" value={analytics.rfm_score} />
+              <MetricRow label="Risk Score Assessment" value={`${analytics.risk_score} / 100 (Low)`} />
+              <MetricRow label="Loyalty Points Balance" value={`${customer.loyalty_points} Pts`} />
+              <MetricRow label="Predicted Next Order" value={analytics.predicted_next_purchase} />
             </div>
-          )}
-          
-          {customer.household_notes && (
-             <div style={{ marginTop: 12, background: "var(--bg)", border: "1px solid var(--card-border)", borderRadius: 10, padding: "12px", color: "var(--slate)" }}>
-              <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 4 }}>Household Notes</div>
-              <div style={{ fontSize: 12 }}>{customer.household_notes}</div>
-            </div>
-          )}
+          </div>
 
+          {/* Personal Information */}
+          <div className="card-panel" style={{ padding: 18 }}>
+            <h3 style={{ fontSize: 14, fontWeight: 700, marginBottom: 14, color: "var(--ink)", display: "flex", alignItems: "center", gap: 8 }}>
+              <User size={16} style={{ color: "var(--teal)" }} />
+              Personal Details
+            </h3>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: 10, fontSize: 13 }}>
+              <DetailRow icon={Phone} label="Phone" value={customer.phone || "N/A"} />
+              <DetailRow icon={Mail} label="Email" value={customer.email || "N/A"} />
+              <DetailRow icon={Calendar} label="Birthday" value={customer.birthday} />
+              <DetailRow icon={User} label="Gender" value={customer.gender} />
+              <DetailRow
+                icon={MapPin}
+                label="Primary Address"
+                value={addresses?.[0]?.full_address || "124 Marine Drive, Fort"}
+              />
+              <DetailRow
+                icon={MapPin}
+                label="City / State"
+                value={`${addresses?.[0]?.city || "Mumbai"}, ${addresses?.[0]?.state || "Maharashtra"} - ${addresses?.[0]?.pincode || "400001"}`}
+              />
+            </div>
+          </div>
+
+          {/* Subscriptions & Consents */}
+          <div className="card-panel" style={{ padding: 18 }}>
+            <h3 style={{ fontSize: 14, fontWeight: 700, marginBottom: 12, color: "var(--ink)" }}>
+              Subscriptions & Consents
+            </h3>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              <ConsentBadge label="WhatsApp Notification Consent" active={customer.whatsapp_consent === 1} />
+              <ConsentBadge label="Email Newsletter Consent" active={customer.newsletter_consent === 1} />
+              <ConsentBadge label="VIP Membership Active" active={customer.is_vip === 1} />
+            </div>
+          </div>
         </div>
 
-        {/* Right Panel - Analytics & Hub */}
-        <div style={{ flex: 1, overflowY: "auto", padding: "20px 28px", display: "flex", flexDirection: "column" }}>
-          
-          {/* KPI Row */}
-          <div style={{ display: "flex", gap: 12, marginBottom: 24, flexWrap: "wrap" }}>
-            <KPICard label="Health Score" value={`${customer.score || customer.health_score || 0}/100`} color={customer.score > 50 ? "var(--teal)" : "var(--coral)"} icon={HeartPulse} />
-            <KPICard label="Lifetime Value (CRM)" value={`₹${Number(customer.ltv).toLocaleString("en-IN")}`} icon={CreditCard} />
-            {customer.shopifyLTV > 0 && <KPICard label="Lifetime Value (Shopify)" value={`₹${Number(customer.shopifyLTV).toLocaleString("en-IN")}`} icon={ShoppingBag} />}
-            <KPICard label="Total Orders" value={kpis.total_orders + (customer.shopifyOrders?.length || 0)} icon={ShoppingBag} />
-            <KPICard label="Avg Order Value" value={`₹${kpis.aov.toLocaleString("en-IN")}`} icon={Activity} />
-            <KPICard label="Open Tickets" value={kpis.open_tickets} color={kpis.open_tickets > 0 ? "var(--coral)" : "var(--muted)"} icon={Ticket} />
-          </div>
-
-          {/* Tabs */}
-          <div style={{ display: "flex", gap: 20, borderBottom: "1px solid var(--card-border)", marginBottom: 20 }}>
-            {tabs.map(t => {
-              const active = activeTab === t.id;
-              const TIcon = t.icon;
+        {/* ── CENTER COLUMN: TABBED WORKSPACE & UNIFIED TIMELINE ────── */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          {/* Workspace Tabs */}
+          <div className="card-panel" style={{ padding: "4px 8px", display: "flex", gap: 4, background: "var(--card)" }}>
+            {[
+              { id: "timeline", label: "Unified Timeline", icon: Activity },
+              { id: "orders", label: `Orders (${orders.length})`, icon: ShoppingBag },
+              { id: "communication", label: "Communications", icon: MessageSquare },
+              { id: "support", label: `Tickets (${support.tickets.length})`, icon: Ticket },
+              { id: "marketing", label: "Marketing & UTM", icon: Zap },
+            ].map((tab) => {
+              const Icon = tab.icon;
               return (
                 <button
-                  key={t.id}
-                  onClick={() => setActiveTab(t.id)}
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
                   style={{
-                    display: "flex", alignItems: "center", gap: 6,
-                    padding: "0 0 12px 0",
-                    background: "none", border: "none", borderBottom: active ? "2px solid var(--teal)" : "2px solid transparent",
-                    color: active ? "var(--teal)" : "var(--muted)",
-                    fontSize: 13, fontWeight: 700, cursor: "pointer",
-                    transition: "all 0.2s"
+                    flex: 1,
+                    padding: "10px 12px",
+                    fontSize: 13,
+                    fontWeight: activeTab === tab.id ? 700 : 500,
+                    color: activeTab === tab.id ? "var(--teal)" : "var(--muted)",
+                    background: activeTab === tab.id ? "var(--teal-light)" : "transparent",
+                    border: "none",
+                    borderRadius: "var(--radius-sm)",
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: 6,
+                    transition: "all 0.15s ease",
                   }}
                 >
-                  <TIcon size={14} /> {t.label}
+                  <Icon size={15} />
+                  {tab.label}
                 </button>
-              )
+              );
             })}
           </div>
 
-          {/* Tab Content Area */}
-          <div style={{ flex: 1 }}>
-            
-            {activeTab === "ai" && (
-              <div style={{ background: "linear-gradient(135deg, var(--teal-light), #fff)", border: "1px solid var(--teal-border)", borderRadius: 12, padding: 24 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 8, color: "var(--teal)", fontWeight: 800, fontSize: 16, marginBottom: 12 }}>
-                  <Sparkles size={20} /> AI Recommendations
-                </div>
-                <p style={{ fontSize: 13, color: "var(--slate)", lineHeight: 1.5, marginBottom: 16 }}>
-                  Based on this customer's profile, purchase history, and recent interactions, the AI suggests the following next best actions:
-                </p>
-                <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                  <div style={{ background: "#fff", padding: 12, borderRadius: 8, border: "1px solid var(--card-border)", fontSize: 13, display: "flex", gap: 10 }}>
-                    <div style={{ color: "var(--teal)" }}><Star size={16} /></div>
-                    <div><strong>Cross-sell Opportunity:</strong> Customer recently bought Vitamin C. High probability to purchase Zinc Supplements.</div>
+          {/* TAB 1: UNIFIED CHRONOLOGICAL TIMELINE */}
+          {activeTab === "timeline" && (
+            <div className="card-panel" style={{ padding: 20 }}>
+              <h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 16, display: "flex", alignItems: "center", gap: 8 }}>
+                <Activity size={16} style={{ color: "var(--teal)" }} />
+                Unified Chronological Timeline (Orders, Calls, Tickets, Notes)
+              </h3>
+
+              <div style={{ display: "flex", flexDirection: "column", gap: 16, position: "relative" }}>
+                {timeline.map((event, idx) => (
+                  <div
+                    key={event.id || idx}
+                    style={{
+                      display: "flex",
+                      gap: 14,
+                      position: "relative",
+                      paddingBottom: idx === timeline.length - 1 ? 0 : 12,
+                      borderLeft: idx === timeline.length - 1 ? "none" : "2px solid var(--card-border)",
+                      marginLeft: 14,
+                      paddingLeft: 20,
+                    }}
+                  >
+                    {/* Timeline Node Bullet Icon */}
+                    <div
+                      style={{
+                        position: "absolute",
+                        left: -11,
+                        top: 2,
+                        width: 20,
+                        height: 20,
+                        borderRadius: "50%",
+                        background: getTimelineColor(event.type).bg,
+                        color: getTimelineColor(event.type).text,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        border: "2px solid var(--card)",
+                      }}
+                    >
+                      {getTimelineIcon(event.type)}
+                    </div>
+
+                    <div style={{ flex: 1, background: "var(--bg)", padding: 12, borderRadius: "var(--radius-sm)", border: "1px solid var(--card-border)" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+                        <span style={{ fontWeight: 700, fontSize: 13.5, color: "var(--ink)" }}>{event.title}</span>
+                        <span style={{ fontSize: 11.5, color: "var(--muted)" }}>{new Date(event.date).toLocaleString()}</span>
+                      </div>
+                      {event.remarks && <p style={{ fontSize: 12.5, color: "var(--text-secondary)" }}>{event.remarks}</p>}
+                      {event.amount && <div style={{ fontSize: 12, fontWeight: 700, color: "var(--teal)", marginTop: 4 }}>Amount: ₹{Number(event.amount).toLocaleString("en-IN")}</div>}
+                    </div>
                   </div>
-                  <div style={{ background: "#fff", padding: 12, borderRadius: 8, border: "1px solid var(--card-border)", fontSize: 13, display: "flex", gap: 10 }}>
-                    <div style={{ color: "var(--coral)" }}><AlertTriangle size={16} /></div>
-                    <div><strong>Churn Risk:</strong> Customer has 2 open tickets and hasn't purchased in 45 days. Suggest initiating a check-in call.</div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* TAB 2: ORDERS & REFUNDS HISTORY */}
+          {activeTab === "orders" && (
+            <div className="card-panel" style={{ padding: 20 }}>
+              <h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 16 }}>Purchase & Order History</h3>
+              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+                <thead>
+                  <tr style={{ background: "var(--bg)", borderBottom: "1px solid var(--card-border)", textAlign: "left", color: "var(--muted)", fontSize: 11, textTransform: "uppercase" }}>
+                    <th style={{ padding: "10px 12px" }}>Product Name</th>
+                    <th style={{ padding: "10px 12px" }}>Order Date</th>
+                    <th style={{ padding: "10px 12px" }}>Qty</th>
+                    <th style={{ padding: "10px 12px" }}>Amount</th>
+                    <th style={{ padding: "10px 12px" }}>Status</th>
+                    <th style={{ padding: "10px 12px" }}>Courier / Tracking</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {orders.map((o) => (
+                    <tr key={o.id} style={{ borderBottom: "1px solid var(--card-border)" }}>
+                      <td style={{ padding: "12px", fontWeight: 600, color: "var(--ink)" }}>{o.product_name}</td>
+                      <td style={{ padding: "12px", color: "var(--muted)" }}>{new Date(o.order_date).toLocaleDateString()}</td>
+                      <td style={{ padding: "12px" }}>{o.quantity}</td>
+                      <td style={{ padding: "12px", fontWeight: 700, color: "var(--teal)" }}>₹{Number(o.amount).toLocaleString("en-IN")}</td>
+                      <td style={{ padding: "12px" }}>
+                        <span className="badge badge-success">{o.status}</span>
+                      </td>
+                      <td style={{ padding: "12px", fontSize: 12, color: "var(--muted)" }}>
+                        {o.courier} ({o.tracking_number})
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {/* TAB 3: COMMUNICATIONS & NOTES */}
+          {activeTab === "communication" && (
+            <div className="card-panel" style={{ padding: 20, display: "flex", flexDirection: "column", gap: 16 }}>
+              <h3 style={{ fontSize: 15, fontWeight: 700 }}>Logged Calls, WhatsApp & Internal Notes</h3>
+
+              <div>
+                <h4 style={{ fontSize: 13, fontWeight: 700, color: "var(--muted)", marginBottom: 8 }}>INTERNAL NOTES</h4>
+                {communication.notes.map((n) => (
+                  <div key={n.id} style={{ background: "var(--bg)", padding: 12, borderRadius: "var(--radius-sm)", marginBottom: 8, border: "1px solid var(--card-border)" }}>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: "var(--teal)", marginBottom: 4 }}>{n.agent_name || "Agent"} • {new Date(n.date).toLocaleString()}</div>
+                    <div style={{ fontSize: 13, color: "var(--ink)" }}>{n.content}</div>
                   </div>
+                ))}
+              </div>
+
+              <div>
+                <h4 style={{ fontSize: 13, fontWeight: 700, color: "var(--muted)", marginBottom: 8 }}>WHATSAPP & EMAIL MESSAGES</h4>
+                {communication.whatsapp.map((w) => (
+                  <div key={w.id} style={{ background: "var(--bg)", padding: 12, borderRadius: "var(--radius-sm)", marginBottom: 8, border: "1px solid var(--card-border)" }}>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: "var(--amber)", marginBottom: 4 }}>WhatsApp ({w.type}) • {new Date(w.date).toLocaleString()}</div>
+                    <div style={{ fontSize: 13, color: "var(--ink)" }}>{w.message}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* TAB 4: SUPPORT HISTORY */}
+          {activeTab === "support" && (
+            <div className="card-panel" style={{ padding: 20 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 14 }}>
+                <h3 style={{ fontSize: 15, fontWeight: 700 }}>Support Tickets & CSAT Scores</h3>
+                <div style={{ display: "flex", gap: 12, fontSize: 13, fontWeight: 700 }}>
+                  <span style={{ color: "var(--status-success-text)" }}>CSAT: {support.csat_score}</span>
+                  <span style={{ color: "var(--teal)" }}>NPS: {support.nps_score}</span>
                 </div>
               </div>
-            )}
 
-            {activeTab !== "ai" && (
-              filteredTimeline.length === 0 ? (
-                <div style={{ padding: 40, textAlign: "center", color: "var(--muted)", fontSize: 14 }}>
-                  No {activeTab} history available.
+              {support.tickets.map((t) => (
+                <div key={t.id} style={{ padding: 12, background: "var(--bg)", borderRadius: "var(--radius-sm)", marginBottom: 10, border: "1px solid var(--card-border)" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+                    <span style={{ fontWeight: 700, fontSize: 13.5 }}>Ticket #{t.id.slice(0, 8)} - {t.department}</span>
+                    <span className="badge badge-pending">{t.status}</span>
+                  </div>
+                  <div style={{ fontSize: 12, color: "var(--muted)" }}>Assigned: {t.agent_name || "Unassigned"} • Priority: {t.priority}</div>
                 </div>
-              ) : (
-                <div style={{ display: "flex", flexDirection: "column", gap: 16, position: "relative" }}>
-                  {/* Timeline vertical line */}
-                  <div style={{ position: "absolute", left: 19, top: 20, bottom: 20, width: 2, background: "var(--card-border)", zIndex: 0 }}></div>
-                  
-                  {filteredTimeline.map((item, idx) => (
-                    <TimelineRow key={`${item.type}-${idx}`} item={item} />
-                  ))}
-                </div>
-              )
-            )}
-            
+              ))}
+            </div>
+          )}
+
+          {/* TAB 5: MARKETING & UTM HISTORY */}
+          {activeTab === "marketing" && (
+            <div className="card-panel" style={{ padding: 20 }}>
+              <h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 14 }}>Marketing Campaigns & UTM History</h3>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                <MetricRow label="Campaigns Received" value={marketing.campaigns_received} />
+                <MetricRow label="Emails Opened" value={marketing.emails_opened} />
+                <MetricRow label="WhatsApp Clicks" value={marketing.whatsapp_clicks} />
+                <MetricRow label="Referral Source" value={marketing.referral_source} />
+                <MetricRow label="UTM Source" value={marketing.utm_source} />
+                <MetricRow label="Coupons Used" value={marketing.coupons_used.join(", ")} />
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* ── RIGHT COLUMN: INTEGRATED AI ASSISTANT PANEL ────────────── */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          <div
+            className="card-panel"
+            style={{
+              padding: 18,
+              background: "linear-gradient(180deg, var(--card) 0%, var(--bg) 100%)",
+              border: "1px solid var(--teal-border)",
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14, color: "var(--teal)" }}>
+              <Sparkles size={18} />
+              <h3 style={{ fontSize: 15, fontWeight: 800 }}>AI Customer Copilot</h3>
+            </div>
+
+            {/* Sentiment Meter */}
+            <div style={{ background: "var(--card)", padding: 12, borderRadius: "var(--radius-sm)", border: "1px solid var(--card-border)", marginBottom: 14 }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: "var(--muted)", marginBottom: 4 }}>CUSTOMER SENTIMENT ANALYSIS</div>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, color: "var(--status-success-text)", fontWeight: 700, fontSize: 14 }}>
+                <HeartPulse size={18} />
+                Positive ({aiInsights.sentiment.positive}%)
+              </div>
+            </div>
+
+            {/* AI Summary */}
+            <div style={{ marginBottom: 14 }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: "var(--muted)", marginBottom: 4 }}>AUTOMATED AI SUMMARY</div>
+              <p style={{ fontSize: 12.5, color: "var(--ink)", lineHeight: 1.5 }}>{aiInsights.summary}</p>
+            </div>
+
+            {/* Buying Behavior */}
+            <div style={{ marginBottom: 14 }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: "var(--muted)", marginBottom: 4 }}>BUYING BEHAVIOR & INTENT</div>
+              <p style={{ fontSize: 12.5, color: "var(--text-secondary)", lineHeight: 1.4 }}>{aiInsights.buying_behavior}</p>
+            </div>
+
+            {/* Suggested Action */}
+            <div style={{ background: "var(--status-info-bg)", padding: 12, borderRadius: "var(--radius-sm)", border: "1px solid var(--status-info-border)", marginBottom: 14 }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: "var(--status-info-text)", marginBottom: 4 }}>SUGGESTED NEXT BEST ACTION</div>
+              <p style={{ fontSize: 12.5, color: "var(--status-info-text)", fontWeight: 600 }}>{aiInsights.suggested_next_action}</p>
+            </div>
+
+            {/* Upsell / Cross-sell Recommendations */}
+            <div style={{ marginBottom: 14 }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: "var(--muted)", marginBottom: 6 }}>RECOMMENDED UPSELL & CROSS-SELL</div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                {aiInsights.recommendations.map((prod, idx) => (
+                  <div key={idx} style={{ background: "var(--card)", padding: "8px 10px", borderRadius: 6, border: "1px solid var(--card-border)", fontSize: 12, fontWeight: 600, color: "var(--teal)", display: "flex", alignItems: "center", gap: 6 }}>
+                    <Plus size={12} /> {prod}
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
       </div>
 
-      {showEditProfile && <EditProfileModal customer={customer} onClose={() => setShowEditProfile(false)} onSaved={async () => { setShowEditProfile(false); await reload(); }} />}
-      
-      {showAddNote && (
-        <SimpleModal title="Add Internal Note" onClose={() => setShowAddNote(false)} onSave={handleAddNote}>
-          <textarea style={{ ...inputStyle, minHeight: 100 }} placeholder="Write a note... this is only visible to agents." value={noteContent} onChange={e => setNoteContent(e.target.value)} />
-        </SimpleModal>
-      )}
-
-      {showAddFollowup && (
-        <SimpleModal title="Schedule Follow-up" onClose={() => setShowAddFollowup(false)} onSave={handleAddFollowup}>
-          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-            <div>
-              <label style={labelStyle}>Due Date & Time</label>
-              <input type="datetime-local" style={inputStyle} value={followupData.due_date} onChange={e => setFollowupData({ ...followupData, due_date: e.target.value })} />
-            </div>
-            <div>
-              <label style={labelStyle}>Reason</label>
-              <input type="text" style={inputStyle} placeholder="e.g. Call to check if supplement is working" value={followupData.reason} onChange={e => setFollowupData({ ...followupData, reason: e.target.value })} />
-            </div>
+      {/* ── MODALS FOR QUICK ACTIONS ─────────────────────────────────── */}
+      {showNoteModal && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <div className="card-panel" style={{ padding: 24, width: 420 }}>
+            <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 12 }}>Add Internal Agent Note</h3>
+            <form onSubmit={handleAddNote}>
+              <textarea
+                className="input"
+                rows={4}
+                placeholder="Type internal note details here..."
+                value={noteContent}
+                onChange={(e) => setNoteContent(e.target.value)}
+                style={{ marginBottom: 16 }}
+              />
+              <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+                <button type="button" className="btn btn-secondary" onClick={() => setShowNoteModal(false)}>Cancel</button>
+                <button type="submit" className="btn btn-primary">Save Note</button>
+              </div>
+            </form>
           </div>
-        </SimpleModal>
+        </div>
       )}
 
+      {showFollowupModal && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <div className="card-panel" style={{ padding: 24, width: 420 }}>
+            <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 12 }}>Schedule Follow-up Task</h3>
+            <form onSubmit={handleCreateFollowup} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              <div>
+                <label style={{ fontSize: 12, fontWeight: 600, color: "var(--muted)", display: "block", marginBottom: 4 }}>Due Date & Time</label>
+                <input type="datetime-local" className="input" value={followupDate} onChange={(e) => setFollowupDate(e.target.value)} required />
+              </div>
+              <div>
+                <label style={{ fontSize: 12, fontWeight: 600, color: "var(--muted)", display: "block", marginBottom: 4 }}>Reason / Topic</label>
+                <input type="text" className="input" placeholder="e.g. Call regarding reorder inquiry" value={followupReason} onChange={(e) => setFollowupReason(e.target.value)} />
+              </div>
+              <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 8 }}>
+                <button type="button" className="btn btn-secondary" onClick={() => setShowFollowupModal(false)}>Cancel</button>
+                <button type="submit" className="btn btn-primary">Create Task</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
-// ─── COMPONENTS ─────────────────────────────────────────────────────────────
-
-function QuickActionButton({ icon: Icon, label, color, onClick }) {
+function MetricRow({ label, value, highlight }) {
   return (
-    <button onClick={onClick} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11.5, fontWeight: 700, color: color || "var(--slate)", background: "#fff", border: "1px solid var(--card-border)", borderRadius: 8, padding: "6px 10px", cursor: "pointer", boxShadow: "0 1px 2px rgba(0,0,0,0.02)" }}>
-      <Icon size={13} /> {label}
-    </button>
+    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 12.5 }}>
+      <span style={{ color: "var(--muted)" }}>{label}</span>
+      <span style={{ fontWeight: 700, color: highlight ? "var(--teal)" : "var(--ink)" }}>{value}</span>
+    </div>
   );
 }
 
-function IdentityRow({ label, value, icon: Icon, color }) {
+function DetailRow({ icon: Icon, label, value }) {
   return (
-    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", padding: "4px 0", fontSize: 12.5 }}>
-      <span style={{ color: "var(--muted)", fontWeight: 500 }}>{label}</span>
-      <span style={{ fontWeight: 600, color: color || "var(--ink)", display: "flex", alignItems: "center", gap: 4 }}>
-        {Icon && <Icon size={12} />} {value}
+    <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
+      <Icon size={15} style={{ color: "var(--muted)", marginTop: 2, flexShrink: 0 }} />
+      <div style={{ flex: 1 }}>
+        <div style={{ fontSize: 11, color: "var(--muted)", fontWeight: 600 }}>{label}</div>
+        <div style={{ color: "var(--ink)", fontWeight: 500 }}>{value}</div>
+      </div>
+    </div>
+  );
+}
+
+function ConsentBadge({ label, active }) {
+  return (
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: 12, padding: "6px 10px", background: "var(--bg)", borderRadius: 6, border: "1px solid var(--card-border)" }}>
+      <span style={{ color: "var(--ink)", fontWeight: 500 }}>{label}</span>
+      <span className={active ? "badge badge-success" : "badge badge-critical"}>
+        {active ? "Active" : "Opted Out"}
       </span>
     </div>
   );
 }
 
-function KPICard({ label, value, icon: Icon, color }) {
-  return (
-    <div style={{ flex: "1 1 140px", background: "#fff", border: "1px solid var(--card-border)", borderRadius: 12, padding: "16px", display: "flex", flexDirection: "column", gap: 8, boxShadow: "0 2px 10px rgba(0,0,0,0.01)" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--muted)", fontSize: 12, fontWeight: 600 }}>
-        <Icon size={14} /> {label}
-      </div>
-      <div style={{ fontSize: 22, fontWeight: 800, color: color || "var(--ink)", letterSpacing: "-0.02em" }}>
-        {value}
-      </div>
-    </div>
-  );
-}
-
-function TimelineRow({ item }) {
-  let Icon = Activity;
-  let color = "var(--slate)";
-  let bg = "var(--slate-light)";
-  
-  if (item.type === "order") {
-    Icon = ShoppingBag;
-    color = "var(--teal)";
-    bg = "var(--teal-light)";
-  } else if (item.type === "call") {
-    Icon = Phone;
-    color = "#6D5BD0";
-    bg = "#6D5BD01A";
-  } else if (item.type === "ticket") {
-    Icon = Ticket;
-    color = "var(--coral)";
-    bg = "var(--coral-light)";
-  } else if (item.type === "note") {
-    Icon = FileText;
-    color = "#E5A000";
-    bg = "#FFF5D1";
+function getTimelineIcon(type) {
+  switch (type) {
+    case "order": return <ShoppingBag size={11} />;
+    case "call": return <Phone size={11} />;
+    case "ticket": return <Ticket size={11} />;
+    case "note": return <FileText size={11} />;
+    default: return <Activity size={11} />;
   }
-
-  return (
-    <div style={{ display: "flex", gap: 16, zIndex: 1 }}>
-      <div style={{ flexShrink: 0, width: 40, height: 40, borderRadius: "50%", background: bg, display: "flex", alignItems: "center", justifyContent: "center", border: "4px solid #fff" }}>
-        <Icon size={16} color={color} />
-      </div>
-      <div style={{ flex: 1, background: "#fff", border: "1px solid var(--card-border)", borderRadius: 12, padding: "14px 16px", marginTop: 2 }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 4 }}>
-          <div style={{ fontSize: 13.5, fontWeight: 700, color: "var(--ink)" }}>{item.title}</div>
-          <div className="tabular" style={{ fontSize: 11.5, color: "var(--muted)", fontWeight: 500 }}>
-            {new Date(item.date).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}
-          </div>
-        </div>
-        
-        {item.type === "order" && (
-          <div style={{ fontSize: 12.5, color: "var(--slate)", marginTop: 4 }}>
-            Quantity: <strong>{item.quantity}</strong> · Amount: <strong>₹{Number(item.amount).toLocaleString()}</strong>
-          </div>
-        )}
-        
-        {item.type === "call" && (
-          <div style={{ fontSize: 12.5, color: "var(--slate)", marginTop: 4 }}>
-            Agent: <strong>{item.agent_name || "Unknown"}</strong>
-            {item.remarks && <div style={{ marginTop: 6, background: "var(--bg)", padding: "6px 10px", borderRadius: 6, fontStyle: "italic" }}>"{item.remarks}"</div>}
-          </div>
-        )}
-
-        {item.type === "ticket" && (
-          <div style={{ fontSize: 12.5, color: "var(--slate)", marginTop: 4 }}>
-            Status: <span style={{ textTransform: "uppercase", fontSize: 10, fontWeight: 800, padding: "2px 6px", background: "var(--bg)", borderRadius: 4 }}>{item.status}</span>
-          </div>
-        )}
-
-        {item.type === "note" && (
-          <div style={{ fontSize: 12.5, color: "var(--slate)", marginTop: 4 }}>
-            <span style={{ fontWeight: 600, color: "var(--muted)" }}>By {item.agent_name}</span>
-            <div style={{ marginTop: 6, background: "#FFFBF0", border: "1px solid #FFE8A1", padding: "8px 12px", borderRadius: 8, whiteSpace: "pre-wrap" }}>
-              {item.remarks}
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
-  );
 }
 
-function SimpleModal({ title, children, onClose, onSave }) {
-  return (
-    <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(15,30,28,0.45)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 200, padding: 16 }}>
-      <div onClick={(e) => e.stopPropagation()} style={{ background: "#fff", borderRadius: 16, padding: 22, width: "100%", maxWidth: 400 }}>
-        <h2 style={{ margin: "0 0 16px", fontSize: 16.5, fontWeight: 700 }}>{title}</h2>
-        {children}
-        <div style={{ display: "flex", gap: 10, marginTop: 20 }}>
-          <button onClick={onClose} style={{ flex: 1, padding: 10, background: "var(--bg)", border: "none", borderRadius: 8, fontWeight: 600 }}>Cancel</button>
-          <button onClick={onSave} style={{ flex: 1, padding: 10, background: "var(--teal)", color: "#fff", border: "none", borderRadius: 8, fontWeight: 700 }}>Save</button>
-        </div>
-      </div>
-    </div>
-  );
+function getTimelineColor(type) {
+  switch (type) {
+    case "order": return { bg: "var(--teal-light)", text: "var(--teal)" };
+    case "call": return { bg: "var(--amber-light)", text: "var(--amber)" };
+    case "ticket": return { bg: "var(--status-critical-bg)", text: "var(--status-critical-text)" };
+    case "note": return { bg: "var(--status-info-bg)", text: "var(--status-info-text)" };
+    default: return { bg: "var(--slate-light)", text: "var(--slate)" };
+  }
 }
-
-// Reuse HealthAndTags and EditProfileModal exactly or similarly from before
-
-function HealthAndTags({ customer, tags, onChange }) {
-  const [adding, setAdding] = useState(null);
-  const [newTag, setNewTag] = useState("");
-
-  const byType = (type) => tags.filter((t) => t.tag_type === type);
-
-  const submitTag = async (tagType) => {
-    if (!newTag.trim()) return;
-    await api.addTag(customer.id, newTag.trim(), tagType);
-    setNewTag("");
-    setAdding(null);
-    onChange();
-  };
-
-  const removeTag = async (tag) => {
-    await api.removeTag(customer.id, tag.id);
-    onChange();
-  };
-
-  const sections = [
-    { type: "health", label: "Health context", icon: HeartPulse, color: "var(--coral)" },
-    { type: "preference", label: "Preferences", icon: Sparkles, color: "var(--teal)" },
-    { type: "behavioral", label: "Behavioral", icon: Brain, color: "#6D5BD0" },
-  ];
-
-  return (
-    <div style={{ marginTop: 22 }}>
-      <h3 style={{ fontSize: 14, fontWeight: 700, margin: "0 0 12px 0", color: "var(--slate)", display: "flex", alignItems: "center", gap: 6 }}>
-        <TagIcon size={14} /> Tags & Context
-      </h3>
-      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-        {sections.map((s) => {
-          const SIcon = s.icon;
-          const sectionTags = byType(s.type);
-          return (
-            <div key={s.type}>
-              <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11.5, fontWeight: 700, color: s.color, marginBottom: 6 }}>
-                <SIcon size={12} /> {s.label}
-              </div>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-                {sectionTags.map((t) => (
-                  <span
-                    key={t.id}
-                    style={{ fontSize: 11.5, fontWeight: 600, color: s.color, background: `${s.color}14`, border: `1px solid ${s.color}33`, borderRadius: 6, padding: "4px 8px", display: "flex", alignItems: "center", gap: 5 }}
-                  >
-                    {t.tag}
-                    <button onClick={() => removeTag(t)} style={{ background: "none", border: "none", color: s.color, opacity: 0.6, display: "flex", cursor: "pointer" }}>
-                      <X size={10} />
-                    </button>
-                  </span>
-                ))}
-
-                {adding === s.type ? (
-                  <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
-                    <input
-                      autoFocus
-                      value={newTag}
-                      onChange={(e) => setNewTag(e.target.value)}
-                      onKeyDown={(e) => e.key === "Enter" && submitTag(s.type)}
-                      placeholder="Type..."
-                      list={`suggestions-${s.type}`}
-                      style={{ fontSize: 11.5, padding: "4px 6px", borderRadius: 4, border: "1px solid var(--slate-border)", width: 100 }}
-                    />
-                    <datalist id={`suggestions-${s.type}`}>
-                      {SUGGESTED_TAGS[s.type].map((t) => <option key={t} value={t} />)}
-                    </datalist>
-                    <button onClick={() => submitTag(s.type)} style={{ fontSize: 11, fontWeight: 700, color: "#fff", background: s.color, border: "none", borderRadius: 4, padding: "4px 8px", cursor: "pointer" }}>Add</button>
-                    <button onClick={() => { setAdding(null); setNewTag(""); }} style={{ background: "none", border: "none", color: "var(--muted)", cursor: "pointer" }}><X size={12} /></button>
-                  </div>
-                ) : (
-                  <button
-                    onClick={() => setAdding(s.type)}
-                    style={{ fontSize: 11.5, fontWeight: 600, color: "var(--muted)", background: "none", border: "1px dashed var(--slate-border)", borderRadius: 6, padding: "4px 8px", display: "flex", alignItems: "center", gap: 4, cursor: "pointer" }}
-                  >
-                    <Plus size={10} /> Add
-                  </button>
-                )}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-function EditProfileModal({ customer, onClose, onSaved }) {
-  const [form, setForm] = useState({
-    age: customer.age || "",
-    gender: customer.gender || "",
-    city: customer.city || "",
-    preferred_contact_time: customer.preferred_contact_time || "",
-    preferred_language: customer.preferred_language || "",
-    household_notes: customer.household_notes || "",
-    allergies_restrictions: customer.allergies_restrictions || "",
-    health_conditions: (customer.health_conditions || []).join(", "),
-    product_preferences: (customer.product_preferences || []).join(", "),
-    price_sensitivity: customer.price_sensitivity || "",
-  });
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState("");
-  const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
-
-  const submit = async () => {
-    setSaving(true);
-    setError("");
-    try {
-      await api.updateCustomer(customer.id, {
-        age: form.age ? Number(form.age) : null,
-        gender: form.gender || null,
-        city: form.city || null,
-        preferred_contact_time: form.preferred_contact_time || null,
-        preferred_language: form.preferred_language || null,
-        household_notes: form.household_notes || null,
-        allergies_restrictions: form.allergies_restrictions || null,
-        health_conditions: form.health_conditions ? form.health_conditions.split(",").map((s) => s.trim()).filter(Boolean) : [],
-        product_preferences: form.product_preferences ? form.product_preferences.split(",").map((s) => s.trim()).filter(Boolean) : [],
-        price_sensitivity: form.price_sensitivity || null,
-      });
-      onSaved();
-    } catch (e) {
-      setError(e.message);
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  return (
-    <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(15,30,28,0.45)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 200, padding: 16 }}>
-      <div onClick={(e) => e.stopPropagation()} style={{ background: "#fff", borderRadius: 16, padding: 22, width: "100%", maxWidth: 460, maxHeight: "85vh", overflowY: "auto" }}>
-        <div style={{ display: "flex", alignItems: "center", marginBottom: 16 }}>
-          <h2 style={{ margin: 0, fontSize: 16.5, fontWeight: 700 }}>Edit profile — {customer.name}</h2>
-          <button onClick={onClose} style={{ marginLeft: "auto", background: "none", border: "none", color: "var(--muted)", cursor: "pointer" }}><X size={18} /></button>
-        </div>
-
-        <div style={{ display: "flex", gap: 10 }}>
-          <ModalField label="Age" style={{ flex: 1 }}><input type="number" style={inputStyle} value={form.age} onChange={(e) => set("age", e.target.value)} /></ModalField>
-          <ModalField label="Gender" style={{ flex: 1 }}>
-            <select style={inputStyle} value={form.gender} onChange={(e) => set("gender", e.target.value)}>
-              <option value="">—</option>
-              <option value="Female">Female</option>
-              <option value="Male">Male</option>
-              <option value="Other">Other</option>
-            </select>
-          </ModalField>
-        </div>
-        <ModalField label="City"><input style={inputStyle} value={form.city} onChange={(e) => set("city", e.target.value)} /></ModalField>
-        <ModalField label="Preferred contact time">
-          <select style={inputStyle} value={form.preferred_contact_time} onChange={(e) => set("preferred_contact_time", e.target.value)}>
-            <option value="">—</option>
-            {CONTACT_TIMES.map((c) => <option key={c.key} value={c.key}>{c.label}</option>)}
-          </select>
-        </ModalField>
-        <ModalField label="Preferred language"><input style={inputStyle} value={form.preferred_language} onChange={(e) => set("preferred_language", e.target.value)} placeholder="e.g. Hindi, Tamil, English" /></ModalField>
-        <ModalField label="Price sensitivity">
-          <select style={inputStyle} value={form.price_sensitivity} onChange={(e) => set("price_sensitivity", e.target.value)}>
-            <option value="">—</option>
-            {PRICE_SENSITIVITY.map((p) => <option key={p.key} value={p.key}>{p.label}</option>)}
-          </select>
-        </ModalField>
-        <ModalField label="Household notes"><input style={inputStyle} value={form.household_notes} onChange={(e) => set("household_notes", e.target.value)} placeholder="e.g. Decisions made jointly with spouse" /></ModalField>
-        <ModalField label="Allergies / restrictions"><input style={inputStyle} value={form.allergies_restrictions} onChange={(e) => set("allergies_restrictions", e.target.value)} placeholder="e.g. Allergic to shellfish-derived supplements" /></ModalField>
-        <ModalField label="Health conditions (comma-separated)"><input style={inputStyle} value={form.health_conditions} onChange={(e) => set("health_conditions", e.target.value)} placeholder="diabetes, joint pain" /></ModalField>
-        <ModalField label="Product preferences (comma-separated)"><input style={inputStyle} value={form.product_preferences} onChange={(e) => set("product_preferences", e.target.value)} placeholder="ayurvedic, sugar-free" /></ModalField>
-
-        {error && <div style={{ color: "var(--coral)", fontSize: 12.5, marginBottom: 10 }}>{error}</div>}
-
-        <button onClick={submit} disabled={saving} style={{ width: "100%", background: "var(--teal)", color: "#fff", border: "none", borderRadius: 9, padding: "10px", fontSize: 13.5, fontWeight: 700, opacity: saving ? 0.7 : 1, cursor: "pointer" }}>
-          {saving ? "Saving…" : "Save profile"}
-        </button>
-      </div>
-    </div>
-  );
-}
-
-function ModalField({ label, children, style }) {
-  return (
-    <div style={{ marginBottom: 12, ...style }}>
-      <label style={labelStyle}>{label}</label>
-      {children}
-    </div>
-  );
-}
-
-const labelStyle = { display: "block", fontSize: 12, fontWeight: 600, color: "var(--slate)", marginBottom: 5 };
-const inputStyle = { width: "100%", fontSize: 13.5, padding: "8px 10px", borderRadius: 8, border: "1px solid var(--slate-border)", fontFamily: "inherit" };

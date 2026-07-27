@@ -119,7 +119,7 @@ export default function ShopifyIntegrationPage() {
     try {
       const [stRes, brRes] = await Promise.all([
         api.shopify.getStores(),
-        api.getBrands ? api.getBrands() : { brands: [] } // Fallback if getBrands isn't in api.js
+        api.listBrands()
       ]);
       setStores(stRes.stores || []);
       setBrands(brRes.brands || []);

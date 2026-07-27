@@ -192,7 +192,7 @@ export default function BAWOEBuilderPage() {
                     <select value={step.config.operator || '=='} onChange={e => updateStepConfig(index, { operator: e.target.value })} style={{ padding: 10, borderRadius: 8, border: `1px solid ${COLORS.border}` }}>
                       <option value="==">Equals (==)</option>
                       <option value="!=">Not Equals (!=)</option>
-                      <option value=">">Greater Than (>)</option>
+                      <option value="&gt;">Greater Than (&gt;)</option>
                     </select>
                     <input value={step.config.value || ''} onChange={e => updateStepConfig(index, { value: e.target.value })} placeholder="Value" style={{ flex: 1, padding: 10, borderRadius: 8, border: `1px solid ${COLORS.border}` }} />
                   </div>

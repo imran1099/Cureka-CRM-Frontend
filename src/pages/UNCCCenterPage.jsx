@@ -211,7 +211,7 @@ export default function UNCCCenterPage() {
                   <div style={{ fontSize: 16, fontWeight: 700, color: isCritical && isUnread ? COLORS.critical : COLORS.text, marginBottom: 8 }}>{n.message}</div>
                   
                   {/* Context Metadata */}
-                  <div style={{ display: "flex", gap: 16, fontSize: 13, color: COLORS.textMuted, flexWrap: "wrap", background: "var(--slate-light)", padding: "8px 12px", borderRadius: 8, display: "inline-flex" }}>
+                  <div style={{ display: "inline-flex", gap: 16, fontSize: 13, color: COLORS.textMuted, flexWrap: "wrap", background: "var(--slate-light)", padding: "8px 12px", borderRadius: 8 }}>
                     {contextData.order_id && <span>Order: <strong>{contextData.order_id}</strong></span>}
                     {contextData.ticket_id && <span>Ticket: <strong>{contextData.ticket_id}</strong></span>}
                     {n.due_at && <span style={{ color: COLORS.danger, fontWeight: 600 }}><Clock size={12} style={{ display: "inline", marginBottom: -2 }} /> Due: {new Date(n.due_at).toLocaleString()}</span>}
