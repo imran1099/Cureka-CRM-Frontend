@@ -53,7 +53,7 @@ export default function CustomerProfilePage() {
   const loadProfile = () => {
     setLoading(true);
     api
-      .get(`/api/customers/${id}/360`)
+      .getCustomer360(id)
       .then((res) => {
         setData(res);
       })
@@ -79,7 +79,7 @@ export default function CustomerProfilePage() {
     e.preventDefault();
     if (!noteContent.trim()) return;
     try {
-      await api.post(`/api/customers/${id}/notes`, { content: noteContent });
+      await api.addCustomerNote(id, { content: noteContent });
       addToast("Internal note added successfully!", "success");
       setNoteContent("");
       setShowNoteModal(false);
@@ -93,7 +93,7 @@ export default function CustomerProfilePage() {
     e.preventDefault();
     if (!followupDate) return;
     try {
-      await api.post(`/api/customers/${id}/followups`, {
+      await api.createFollowup(id, {
         due_date: followupDate,
         reason: followupReason || "Customer Follow-up",
       });
@@ -242,6 +242,7 @@ export default function CustomerProfilePage() {
           <div className="card-panel" style={{ padding: "4px 8px", display: "flex", gap: 4, background: "var(--card)" }}>
             {[
               { id: "timeline", label: "Unified Timeline", icon: Activity },
+              { id: "whatsapp", label: "WhatsApp (BoB)", icon: MessageSquare },
               { id: "orders", label: `Orders (${orders.length})`, icon: ShoppingBag },
               { id: "communication", label: "Communications", icon: MessageSquare },
               { id: "support", label: `Tickets (${support.tickets.length})`, icon: Ticket },
@@ -326,6 +327,35 @@ export default function CustomerProfilePage() {
                       {event.remarks && <p style={{ fontSize: 12.5, color: "var(--text-secondary)" }}>{event.remarks}</p>}
                       {event.amount && <div style={{ fontSize: 12, fontWeight: 700, color: "var(--teal)", marginTop: 4 }}>Amount: ₹{Number(event.amount).toLocaleString("en-IN")}</div>}
                     </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* TAB: WHATSAPP BUSINESS ON BOT */}
+          {activeTab === "whatsapp" && (
+            <div className="card-panel" style={{ padding: 20, display: "flex", flexDirection: "column", gap: 16 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <h3 style={{ fontSize: 15, fontWeight: 700, display: "flex", alignItems: "center", gap: 8 }}>
+                  <MessageSquare size={16} style={{ color: "var(--status-success-text)" }} />
+                  WhatsApp Conversation History & Sent Templates (BusinessOnBot)
+                </h3>
+                <button className="btn btn-secondary btn-sm" onClick={() => navigate("/bob")}>
+                  Open Full Inbox
+                </button>
+              </div>
+
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                {communication?.whatsapp?.map((w) => (
+                  <div key={w.id} style={{ padding: 14, background: "var(--bg)", borderRadius: "var(--radius-sm)", border: "1px solid var(--card-border)" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6, fontSize: 12 }}>
+                      <span style={{ fontWeight: 700, color: w.type === "outbound" ? "var(--teal)" : "var(--amber)" }}>
+                        {w.type === "outbound" ? "Agent / Bot Outbound" : "Customer Inbound"}
+                      </span>
+                      <span style={{ color: "var(--muted)" }}>{new Date(w.date).toLocaleString()}</span>
+                    </div>
+                    <p style={{ fontSize: 13, color: "var(--ink)", margin: 0, lineHeight: 1.4 }}>{w.message}</p>
                   </div>
                 ))}
               </div>

@@ -42,6 +42,7 @@ import BAWOEBuilderPage from "./pages/BAWOEBuilderPage.jsx";
 import BAWOELogViewerPage from "./pages/BAWOELogViewerPage.jsx";
 import UNCCCenterPage from "./pages/UNCCCenterPage.jsx";
 import ESCAMSConsolePage from "./pages/ESCAMSConsolePage.jsx";
+import BusinessOnBotPage from "./pages/BusinessOnBotPage.jsx";
 import AppShell from "./components/AppShell.jsx";
 
 function Protected({ children, module, action }) {
@@ -165,6 +166,12 @@ export default function App() {
                 path="notifications"
                 element={
                   <UNCCCenterPage />
+                }
+              />
+              <Route
+                path="bob"
+                element={
+                  <BusinessOnBotPage />
                 }
               />
               <Route

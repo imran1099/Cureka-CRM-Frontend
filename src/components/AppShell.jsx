@@ -160,6 +160,7 @@ export default function AppShell() {
           />
           {openSubmenus.engagement && (
             <div style={{ display: "flex", flexDirection: "column", gap: 2, paddingLeft: 8 }}>
+              <SidebarNavItem to="/bob" icon={MessageSquare} label="WhatsApp Inbox (BoB)" />
               <SidebarNavItem to="/tickets" icon={Ticket} label="Tickets" />
               <SidebarNavItem to="/calls" icon={PhoneOutgoing} label="Calls" />
               <SidebarNavItem to="/followups" icon={Clock} label="WhatsApp & Emails" />

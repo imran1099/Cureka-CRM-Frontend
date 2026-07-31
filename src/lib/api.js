@@ -57,6 +57,13 @@ async function request(path, { method = "GET", body, auth = true } = {}) {
 }
 
 export const api = {
+  // Generic HTTP helpers
+  get: (path, opts = {}) => request(path.startsWith("/api") ? path.slice(4) : path, { method: "GET", ...opts }),
+  post: (path, body, opts = {}) => request(path.startsWith("/api") ? path.slice(4) : path, { method: "POST", body, ...opts }),
+  put: (path, body, opts = {}) => request(path.startsWith("/api") ? path.slice(4) : path, { method: "PUT", body, ...opts }),
+  patch: (path, body, opts = {}) => request(path.startsWith("/api") ? path.slice(4) : path, { method: "PATCH", body, ...opts }),
+  delete: (path, opts = {}) => request(path.startsWith("/api") ? path.slice(4) : path, { method: "DELETE", ...opts }),
+
   // Auth
   login: (email, password) => request("/auth/login", { method: "POST", body: { email, password }, auth: false }),
   logout: () => request("/auth/logout", { method: "POST" }),
@@ -359,6 +366,25 @@ export const api = {
     getNotifications: () => request("/uncc"),
     markAsRead: (id) => request(`/uncc/${id}/read`, { method: "PUT" }),
     executeQuickAction: (id, payload) => request(`/uncc/${id}/action`, { method: "POST", body: payload })
+  },
+
+  // BusinessOnBot WhatsApp Integration Layer (BoB)
+  bob: {
+    getAccount: (brandId) => request(`/bob/account${brandId ? `?brand_id=${brandId}` : ""}`),
+    saveAccount: (payload) => request("/bob/account", { method: "POST", body: payload }),
+    getConversations: (params = {}) => {
+      const qs = new URLSearchParams(params).toString();
+      return request(`/bob/conversations${qs ? `?${qs}` : ""}`);
+    },
+    getConversation: (id) => request(`/bob/conversations/${id}`),
+    getMessages: (id) => request(`/bob/conversations/${id}/messages`),
+    sendMessage: (id, payload) => request(`/bob/conversations/${id}/messages`, { method: "POST", body: payload }),
+    assignAgent: (id, agentId) => request(`/bob/conversations/${id}/assign`, { method: "PATCH", body: { agent_id: agentId } }),
+    updateStatus: (id, status) => request(`/bob/conversations/${id}/status`, { method: "PATCH", body: { status } }),
+    getTemplates: (category) => request(`/bob/templates${category ? `?category=${category}` : ""}`),
+    sendTemplate: (payload) => request("/bob/templates/send", { method: "POST", body: payload }),
+    getAnalytics: (brandId) => request(`/bob/analytics${brandId ? `?brand_id=${brandId}` : ""}`),
+    getHealth: () => request("/bob/health")
   }
 };
 

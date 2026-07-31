@@ -36,8 +36,8 @@ export function GlobalSearchModal({ isOpen, onClose }) {
     const timer = setTimeout(async () => {
       setLoading(true);
       try {
-        const res = await api.get(`/api/customers/search?q=${encodeURIComponent(query)}`);
-        setResults(res.results || []);
+        const res = await api.searchCustomers(query);
+        setResults(res.results || res.customers || []);
       } catch (err) {
         console.error("Global autocomplete search error:", err);
         setResults([]);
