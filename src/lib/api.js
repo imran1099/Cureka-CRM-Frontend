@@ -17,13 +17,14 @@ async function request(path, { method = "GET", body, auth = true } = {}) {
     if (token) headers.Authorization = `Bearer ${token}`;
   }
 
-  let url = `${BASE}${path}`;
+  const cleanPath = path.startsWith("/api") ? path.slice(4) : path;
+  let url = `${BASE}${cleanPath}`;
   let finalBody = body;
 
   const brandId = getBrandId();
   if (brandId && auth) {
     // Exclude brand APIs from auto-injection
-    if (!path.startsWith("/brands")) {
+    if (!cleanPath.startsWith("/brands")) {
       if (method === "GET" || method === "DELETE") {
         const char = url.includes("?") ? "&" : "?";
         url += `${char}brand_id=${encodeURIComponent(brandId)}`;
@@ -57,12 +58,12 @@ async function request(path, { method = "GET", body, auth = true } = {}) {
 }
 
 export const api = {
-  // Generic HTTP helpers
-  get: (path, opts = {}) => request(path.startsWith("/api") ? path.slice(4) : path, { method: "GET", ...opts }),
-  post: (path, body, opts = {}) => request(path.startsWith("/api") ? path.slice(4) : path, { method: "POST", body, ...opts }),
-  put: (path, body, opts = {}) => request(path.startsWith("/api") ? path.slice(4) : path, { method: "PUT", body, ...opts }),
-  patch: (path, body, opts = {}) => request(path.startsWith("/api") ? path.slice(4) : path, { method: "PATCH", body, ...opts }),
-  delete: (path, opts = {}) => request(path.startsWith("/api") ? path.slice(4) : path, { method: "DELETE", ...opts }),
+  // Generic HTTP Methods
+  get: (path) => request(path, { method: "GET" }),
+  post: (path, body) => request(path, { method: "POST", body }),
+  put: (path, body) => request(path, { method: "PUT", body }),
+  patch: (path, body) => request(path, { method: "PATCH", body }),
+  delete: (path) => request(path, { method: "DELETE" }),
 
   // Auth
   login: (email, password) => request("/auth/login", { method: "POST", body: { email, password }, auth: false }),

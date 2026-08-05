@@ -53,7 +53,7 @@ export default function CustomerProfilePage() {
   const loadProfile = () => {
     setLoading(true);
     api
-      .getCustomer360(id)
+      .get(`/api/customers/${id}/360`)
       .then((res) => {
         setData(res);
       })
@@ -79,7 +79,7 @@ export default function CustomerProfilePage() {
     e.preventDefault();
     if (!noteContent.trim()) return;
     try {
-      await api.addCustomerNote(id, { content: noteContent });
+      await api.post(`/api/customers/${id}/notes`, { content: noteContent });
       addToast("Internal note added successfully!", "success");
       setNoteContent("");
       setShowNoteModal(false);
@@ -93,7 +93,7 @@ export default function CustomerProfilePage() {
     e.preventDefault();
     if (!followupDate) return;
     try {
-      await api.createFollowup(id, {
+      await api.post(`/api/customers/${id}/followups`, {
         due_date: followupDate,
         reason: followupReason || "Customer Follow-up",
       });

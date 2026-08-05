@@ -43,7 +43,7 @@ const getCategoryIcon = (category, priority) => {
 export default function UNCCCenterPage() {
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [filterStatus, setFilterStatus] = useState('unread');
+  const [filterStatus, setFilterStatus] = useState('all');
   const [filterPriority, setFilterPriority] = useState('all');
   const [filterCategory, setFilterCategory] = useState('all');
   const [search, setSearch] = useState('');
@@ -160,9 +160,15 @@ export default function UNCCCenterPage() {
           </div>
         ) : (
           filtered.map(n => {
+            let contextData = {};
+            if (typeof n.context_data === 'string') {
+              try { contextData = JSON.parse(n.context_data); } catch (e) { contextData = {}; }
+            } else if (typeof n.context_data === 'object' && n.context_data !== null) {
+              contextData = n.context_data;
+            }
+
             const isCritical = n.priority === 'Critical';
             const isUnread = n.status === 'unread';
-            const contextData = n.context_data ? JSON.parse(n.context_data) : {};
 
             return (
               <div key={n.id} style={{ 

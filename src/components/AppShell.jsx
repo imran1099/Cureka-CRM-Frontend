@@ -68,7 +68,7 @@ export default function AppShell() {
       try {
         const res = await api.getDueCallbacks();
         setDueCallbacks(res.due || []);
-      } catch (err) {}
+      } catch (err) { }
     };
     checkDue();
     const int = setInterval(checkDue, 60000);
@@ -164,7 +164,8 @@ export default function AppShell() {
               <SidebarNavItem to="/tickets" icon={Ticket} label="Tickets" />
               <SidebarNavItem to="/calls" icon={PhoneOutgoing} label="Calls" />
               <SidebarNavItem to="/followups" icon={Clock} label="WhatsApp & Emails" />
-              <SidebarNavItem to="/admin/integrations/shopify" icon={ShoppingBag} label="Orders & Returns" />
+              {/* <SidebarNavItem to="/admin/integrations/shopify" icon={ShoppingBag} label="Orders & Returns" /> */}
+              <SidebarNavItem to="/admin/integrations/shopify" icon={ShoppingBag} label="Shopify Integration" />
               <SidebarNavItem to="/knowledge" icon={BookOpen} label="Knowledge Base" />
             </div>
           )}
