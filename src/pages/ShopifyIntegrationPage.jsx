@@ -187,9 +187,9 @@ export default function ShopifyIntegrationPage() {
   let customersSynced = 0, ordersSynced = 0, productsSynced = 0, failedEvents = queueStats.failed || 0;
   logs.forEach(log => {
     if (log.status === "completed") {
-      if (log.entity_type === "customers") customersSynced += log.records_processed;
-      if (log.entity_type === "orders") ordersSynced += log.records_processed;
-      if (log.entity_type === "products") productsSynced += log.records_processed;
+      if (log.sync_type === "customers") customersSynced += log.records_processed;
+      if (log.sync_type === "orders") ordersSynced += log.records_processed;
+      if (log.sync_type === "products") productsSynced += log.records_processed;
     }
     failedEvents += (log.records_failed || 0);
   });
@@ -406,7 +406,7 @@ export default function ShopifyIntegrationPage() {
                         logs.map(log => (
                           <tr key={log.id} style={{ borderBottom: `1px solid ${COLORS.border}` }}>
                             <td style={{ padding: "14px 20px", fontSize: 13, color: COLORS.text }}>{new Date(log.started_at).toLocaleString()}</td>
-                            <td style={{ padding: "14px 20px", fontSize: 13, fontWeight: 600, color: COLORS.text, textTransform: "capitalize" }}>{log.entity_type}</td>
+                            <td style={{ padding: "14px 20px", fontSize: 13, fontWeight: 600, color: COLORS.text, textTransform: "capitalize" }}>{log.sync_type}</td>
                             <td style={{ padding: "14px 20px" }}><Badge status={log.status} /></td>
                             <td style={{ padding: "14px 20px", fontSize: 12 }}>
                               <div style={{ color: COLORS.success, fontWeight: 600 }}>{log.records_processed || 0} Processed</div>
