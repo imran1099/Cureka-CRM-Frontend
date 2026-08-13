@@ -112,7 +112,7 @@ export default function ShopifyIntegrationPage() {
   const [selectedStoreId, setSelectedStoreId] = useState(null);
   
   const [showAddModal, setShowAddModal] = useState(false);
-  const [formData, setFormData] = useState({ brand_id: "", store_url: "", access_token: "", webhook_secret: "" });
+  const [formData, setFormData] = useState({ brand_id: "", store_url: "", clientId: "", clientSecret: "", webhook_secret: "" });
   const [loading, setLoading] = useState(false);
 
   const loadAll = useCallback(async () => {
@@ -160,7 +160,7 @@ export default function ShopifyIntegrationPage() {
     try {
       await api.shopify.connectStore(formData);
       setShowAddModal(false);
-      setFormData({ brand_id: "", store_url: "", access_token: "", webhook_secret: "" });
+      setFormData({ brand_id: "", store_url: "", clientId: "", clientSecret: "", webhook_secret: "" });
       await loadAll();
     } catch (err) {
       alert(err.message || "Failed to connect store");
@@ -463,16 +463,28 @@ export default function ShopifyIntegrationPage() {
             </div>
             
             <div style={{ marginTop: 16 }}>
-              <label style={labelStyle}>Admin API Access Token</label>
+              <label style={labelStyle}>Shopify Client ID</label>
+              <input 
+                type="text" 
+                required
+                placeholder="Client ID from Shopify App"
+                value={formData.clientId}
+                onChange={e => setFormData({...formData, clientId: e.target.value})}
+                style={inputStyle}
+              />
+            </div>
+
+            <div style={{ marginTop: 16 }}>
+              <label style={labelStyle}>Shopify Client Secret</label>
               <input 
                 type="password" 
                 required
-                placeholder="shpat_xxxxxxxxxxxxx"
-                value={formData.access_token}
-                onChange={e => setFormData({...formData, access_token: e.target.value})}
+                placeholder="Client Secret from Shopify App"
+                value={formData.clientSecret}
+                onChange={e => setFormData({...formData, clientSecret: e.target.value})}
                 style={inputStyle}
               />
-              <p style={{ margin: "4px 0 0 0", fontSize: 11, color: COLORS.textMuted }}>Requires `read_customers`, `read_orders`, and `read_products` scopes.</p>
+              <p style={{ margin: "4px 0 0 0", fontSize: 11, color: COLORS.textMuted }}>Uses Shopify Client Credentials authentication. The Shopify app must be installed on the store and belong to the same Shopify organization.</p>
             </div>
             
             <div style={{ marginTop: 16 }}>
