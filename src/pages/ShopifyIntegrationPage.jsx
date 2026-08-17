@@ -487,16 +487,7 @@ export default function ShopifyIntegrationPage() {
               <p style={{ margin: "4px 0 0 0", fontSize: 11, color: COLORS.textMuted }}>Uses Shopify Client Credentials authentication. The Shopify app must be installed on the store and belong to the same Shopify organization.</p>
             </div>
             
-            <div style={{ marginTop: 16 }}>
-              <label style={labelStyle}>Webhook Secret (Optional)</label>
-              <input 
-                type="password" 
-                placeholder="Required for real-time syncing"
-                value={formData.webhook_secret}
-                onChange={e => setFormData({...formData, webhook_secret: e.target.value})}
-                style={inputStyle}
-              />
-            </div>
+
             
             <div style={{ display: "flex", gap: 12, marginTop: 24 }}>
               <button 
