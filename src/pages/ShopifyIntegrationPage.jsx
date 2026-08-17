@@ -487,6 +487,18 @@ export default function ShopifyIntegrationPage() {
               <p style={{ margin: "4px 0 0 0", fontSize: 11, color: COLORS.textMuted }}>Uses Shopify Client Credentials authentication. The Shopify app must be installed on the store and belong to the same Shopify organization.</p>
             </div>
             
+            <div style={{ marginTop: 16 }}>
+              <label style={labelStyle}>Store Webhook Secret (Optional)</label>
+              <input 
+                type="password" 
+                placeholder="Only required if creating webhooks manually in Shopify Admin (starts with whsec_)"
+                value={formData.webhook_secret}
+                onChange={e => setFormData({...formData, webhook_secret: e.target.value})}
+                style={inputStyle}
+              />
+              <p style={{ margin: "4px 0 0 0", fontSize: 11, color: COLORS.textMuted }}>If you create webhooks manually in Shopify Admin, paste the secret here. Webhooks created via API will automatically use your Client Secret.</p>
+            </div>
+            
 
             
             <div style={{ display: "flex", gap: 12, marginTop: 24 }}>
