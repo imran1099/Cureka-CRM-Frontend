@@ -32,6 +32,7 @@ import {
   ExternalLink,
   Activity,
   HeartPulse,
+  Truck,
 } from "lucide-react";
 
 export default function CustomerProfilePage() {
@@ -212,12 +213,12 @@ export default function CustomerProfilePage() {
               <DetailRow
                 icon={MapPin}
                 label="Primary Address"
-                value={addresses?.[0]?.full_address || "124 Marine Drive, Fort"}
+                value={addresses?.[0]?.full_address || "N/A"}
               />
               <DetailRow
                 icon={MapPin}
                 label="City / State"
-                value={`${addresses?.[0]?.city || "Mumbai"}, ${addresses?.[0]?.state || "Maharashtra"} - ${addresses?.[0]?.pincode || "400001"}`}
+                value={addresses?.[0] ? `${addresses[0].city || "N/A"}, ${addresses[0].state || "N/A"} - ${addresses[0].pincode || "N/A"}` : "N/A"}
               />
             </div>
           </div>
@@ -366,34 +367,56 @@ export default function CustomerProfilePage() {
           {activeTab === "orders" && (
             <div className="card-panel" style={{ padding: 20 }}>
               <h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 16 }}>Purchase & Order History</h3>
-              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
-                <thead>
-                  <tr style={{ background: "var(--bg)", borderBottom: "1px solid var(--card-border)", textAlign: "left", color: "var(--muted)", fontSize: 11, textTransform: "uppercase" }}>
-                    <th style={{ padding: "10px 12px" }}>Product Name</th>
-                    <th style={{ padding: "10px 12px" }}>Order Date</th>
-                    <th style={{ padding: "10px 12px" }}>Qty</th>
-                    <th style={{ padding: "10px 12px" }}>Amount</th>
-                    <th style={{ padding: "10px 12px" }}>Status</th>
-                    <th style={{ padding: "10px 12px" }}>Courier / Tracking</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {orders.map((o) => (
-                    <tr key={o.id} style={{ borderBottom: "1px solid var(--card-border)" }}>
-                      <td style={{ padding: "12px", fontWeight: 600, color: "var(--ink)" }}>{o.product_name}</td>
-                      <td style={{ padding: "12px", color: "var(--muted)" }}>{new Date(o.order_date).toLocaleDateString()}</td>
-                      <td style={{ padding: "12px" }}>{o.quantity}</td>
-                      <td style={{ padding: "12px", fontWeight: 700, color: "var(--teal)" }}>₹{Number(o.amount).toLocaleString("en-IN")}</td>
-                      <td style={{ padding: "12px" }}>
-                        <span className="badge badge-success">{o.status}</span>
-                      </td>
-                      <td style={{ padding: "12px", fontSize: 12, color: "var(--muted)" }}>
-                        {o.courier} ({o.tracking_number})
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+              <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                {orders.map((o) => (
+                  <div key={o.id} style={{ border: "1px solid var(--card-border)", borderRadius: "var(--radius-md)", padding: 16 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", borderBottom: "1px solid var(--card-border)", paddingBottom: 12, marginBottom: 12 }}>
+                      <div>
+                        <div style={{ fontWeight: 700, fontSize: 14 }}>
+                          {o.source === "Shopify" ? `Order #${o.order_number}` : `Manual Order`} 
+                          <span className="badge" style={{ marginLeft: 8, background: "var(--bg-elevated)", color: "var(--ink)" }}>{o.source}</span>
+                        </div>
+                        <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 4 }}>{new Date(o.order_date).toLocaleString()}</div>
+                      </div>
+                      <div style={{ textAlign: "right" }}>
+                        <div style={{ fontWeight: 700, fontSize: 15, color: "var(--teal)" }}>₹{Number(o.total_price).toLocaleString("en-IN")}</div>
+                        <div style={{ fontSize: 12, marginTop: 4, display: "flex", gap: 6, justifyContent: "flex-end" }}>
+                          <span className="badge badge-success">{o.financial_status}</span>
+                          <span className="badge badge-secondary">{o.fulfillment_status}</span>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div style={{ fontSize: 13 }}>
+                      <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                        <thead>
+                          <tr style={{ color: "var(--muted)", fontSize: 11, textTransform: "uppercase", textAlign: "left" }}>
+                            <th style={{ paddingBottom: 8 }}>Item</th>
+                            <th style={{ paddingBottom: 8, textAlign: "center" }}>Qty</th>
+                            <th style={{ paddingBottom: 8, textAlign: "right" }}>Price</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {o.line_items?.map((item, idx) => (
+                            <tr key={idx}>
+                              <td style={{ padding: "6px 0", fontWeight: 500 }}>
+                                {item.product_name} {item.sku && <span style={{ color: "var(--muted)", fontSize: 11 }}>({item.sku})</span>}
+                              </td>
+                              <td style={{ padding: "6px 0", textAlign: "center" }}>{item.quantity}</td>
+                              <td style={{ padding: "6px 0", textAlign: "right" }}>₹{Number(item.total_price || 0).toLocaleString("en-IN")}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                    <div style={{ marginTop: 12, paddingTop: 12, borderTop: "1px dashed var(--card-border)", fontSize: 12, color: "var(--muted)" }}>
+                      <Truck size={14} style={{ verticalAlign: "middle", marginRight: 4, marginBottom: 2 }} /> 
+                      Tracking: {o.tracking_number}
+                    </div>
+                  </div>
+                ))}
+                {orders.length === 0 && <div style={{ padding: 20, textAlign: "center", color: "var(--muted)" }}>No purchase history found.</div>}
+              </div>
             </div>
           )}
 
