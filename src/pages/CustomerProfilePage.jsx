@@ -121,7 +121,7 @@ export default function CustomerProfilePage() {
     );
   }
 
-  const { customer, analytics, orders, communication, support, marketing, subscriptions, timeline, addresses, tags, aiInsights } = data;
+  const { customer, analytics, orders, abandoned_checkouts = [], communication, support, marketing, subscriptions, timeline, addresses, tags, aiInsights } = data;
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20, maxWidth: 1440, margin: "0 auto" }}>
@@ -245,6 +245,7 @@ export default function CustomerProfilePage() {
               { id: "timeline", label: "Unified Timeline", icon: Activity },
               { id: "whatsapp", label: "WhatsApp (BoB)", icon: MessageSquare },
               { id: "orders", label: `Orders (${orders.length})`, icon: ShoppingBag },
+              { id: "abandoned", label: `Abandoned Carts (${abandoned_checkouts.length})`, icon: ShoppingBag },
               { id: "communication", label: "Communications", icon: MessageSquare },
               { id: "support", label: `Tickets (${support.tickets.length})`, icon: Ticket },
               { id: "marketing", label: "Marketing & UTM", icon: Zap },
@@ -375,6 +376,12 @@ export default function CustomerProfilePage() {
                         <div style={{ fontWeight: 700, fontSize: 14 }}>
                           {o.source === "Shopify" ? `Order #${o.order_number}` : `Manual Order`} 
                           <span className="badge" style={{ marginLeft: 8, background: "var(--bg-elevated)", color: "var(--ink)" }}>{o.source}</span>
+                          {o.status === 'cancelled' && (
+                            <span className="badge badge-critical" style={{ marginLeft: 8 }}>Cancelled</span>
+                          )}
+                          {o.status === 'refunded' && (
+                            <span className="badge badge-warning" style={{ marginLeft: 8, background: "var(--amber-light)", color: "var(--amber)" }}>Refunded</span>
+                          )}
                         </div>
                         <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 4 }}>{new Date(o.order_date).toLocaleString()}</div>
                       </div>
@@ -416,6 +423,65 @@ export default function CustomerProfilePage() {
                   </div>
                 ))}
                 {orders.length === 0 && <div style={{ padding: 20, textAlign: "center", color: "var(--muted)" }}>No purchase history found.</div>}
+              </div>
+            </div>
+          )}
+
+          {/* TAB: ABANDONED CARTS */}
+          {activeTab === "abandoned" && (
+            <div className="card-panel" style={{ padding: 20 }}>
+              <h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 16 }}>Abandoned Checkouts</h3>
+              <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                {abandoned_checkouts.map((c) => (
+                  <div key={c.id} style={{ border: "1px solid var(--card-border)", borderRadius: "var(--radius-md)", padding: 16 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", borderBottom: "1px solid var(--card-border)", paddingBottom: 12, marginBottom: 12 }}>
+                      <div>
+                        <div style={{ fontWeight: 700, fontSize: 14 }}>
+                          Abandoned Cart 
+                          <span className="badge" style={{ marginLeft: 8, background: "var(--bg-elevated)", color: "var(--ink)" }}>Shopify</span>
+                          {c.status === 'recovered' && (
+                            <span className="badge badge-success" style={{ marginLeft: 8 }}>Recovered</span>
+                          )}
+                        </div>
+                        <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 4 }}>{new Date(c.created_at).toLocaleString()}</div>
+                      </div>
+                      <div style={{ textAlign: "right" }}>
+                        <div style={{ fontWeight: 700, fontSize: 15, color: "var(--teal)" }}>₹{Number(c.total_price).toLocaleString("en-IN")}</div>
+                        {c.abandoned_checkout_url && (
+                          <div style={{ marginTop: 6 }}>
+                            <a href={c.abandoned_checkout_url} target="_blank" rel="noreferrer" style={{ fontSize: 11, color: "var(--primary)", textDecoration: "none", fontWeight: 600 }}>
+                              Recovery Link <ExternalLink size={10} style={{ verticalAlign: "middle" }} />
+                            </a>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    
+                    <div style={{ fontSize: 13 }}>
+                      <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                        <thead>
+                          <tr style={{ color: "var(--muted)", fontSize: 11, textTransform: "uppercase", textAlign: "left" }}>
+                            <th style={{ paddingBottom: 8 }}>Item</th>
+                            <th style={{ paddingBottom: 8, textAlign: "center" }}>Qty</th>
+                            <th style={{ paddingBottom: 8, textAlign: "right" }}>Price</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {(typeof c.line_items === 'string' ? JSON.parse(c.line_items) : c.line_items || []).map((item, idx) => (
+                            <tr key={idx}>
+                              <td style={{ padding: "6px 0", fontWeight: 500 }}>
+                                {item.title || item.name} {item.sku && <span style={{ color: "var(--muted)", fontSize: 11 }}>({item.sku})</span>}
+                              </td>
+                              <td style={{ padding: "6px 0", textAlign: "center" }}>{item.quantity}</td>
+                              <td style={{ padding: "6px 0", textAlign: "right" }}>₹{Number(item.price || 0).toLocaleString("en-IN")}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                ))}
+                {abandoned_checkouts.length === 0 && <div style={{ padding: 20, textAlign: "center", color: "var(--muted)" }}>No abandoned checkouts found.</div>}
               </div>
             </div>
           )}
