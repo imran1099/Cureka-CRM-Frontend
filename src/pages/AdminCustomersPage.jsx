@@ -130,7 +130,12 @@ export default function AdminCustomersPage() {
                     <td style={{ padding: "10px 16px", fontSize: 13.5, fontWeight: 600 }}>{c.name}</td>
                     <td className="tabular" style={{ padding: "10px 16px", fontSize: 13 }}>{c.phone}</td>
                     <td style={{ padding: "10px 16px" }}>
-                      <span style={{ fontSize: 11.5, fontWeight: 700, color: seg.color, background: seg.bg, borderRadius: 6, padding: "3px 8px" }}>{seg.label}</span>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                        <span style={{ fontSize: 11.5, fontWeight: 700, color: seg.color, background: seg.bg, borderRadius: 6, padding: "3px 8px" }}>{seg.label}</span>
+                        {c.abandoned_cart_count > 0 && (
+                          <span style={{ fontSize: 11.5, fontWeight: 700, color: "#d97706", background: "#fef3c7", borderRadius: 6, padding: "3px 8px" }}>Abandoned Cart</span>
+                        )}
+                      </div>
                     </td>
                     <td style={{ padding: "10px 16px", fontSize: 12.5, color: "var(--muted)" }}>{SOURCES[c.source] || c.source}</td>
                     <td style={{ padding: "10px 16px" }}>
