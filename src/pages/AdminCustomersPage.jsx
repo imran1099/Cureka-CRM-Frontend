@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../lib/api";
 import { SEGMENTS, SOURCES } from "../lib/constants";
-import { Search, Plus, Upload, ExternalLink, X, ChevronLeft, ChevronRight } from "lucide-react";
+import { Search, Plus, Upload, ExternalLink, X, ChevronLeft, ChevronRight, Trash2 } from "lucide-react";
 
 export default function AdminCustomersPage() {
   const [customers, setCustomers] = useState([]);
@@ -12,6 +12,8 @@ export default function AdminCustomersPage() {
   const [loading, setLoading] = useState(true);
   const [showAdd, setShowAdd] = useState(false);
   const [showImport, setShowImport] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState(null); // { id, name }
+  const [deleting, setDeleting] = useState(false);
 
   // Pagination State
   const [page, setPage] = useState(1);
@@ -49,6 +51,20 @@ export default function AdminCustomersPage() {
   const reassign = async (customerId, agentId) => {
     await api.updateCustomer(customerId, { assigned_agent_id: agentId || null });
     load();
+  };
+
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    try {
+      await api.delete(`/api/customers/${deleteTarget.id}`);
+      setDeleteTarget(null);
+      load();
+    } catch (err) {
+      alert("Failed to delete customer. Please try again.");
+    } finally {
+      setDeleting(false);
+    }
   };
 
   return (
@@ -98,6 +114,7 @@ export default function AdminCustomersPage() {
               <Th align="right">LTV</Th>
               <Th>Assigned agent</Th>
               <Th></Th>
+              <Th></Th>
             </tr>
           </thead>
           <tbody>
@@ -137,8 +154,19 @@ export default function AdminCustomersPage() {
                       </select>
                     </td>
                     <td style={{ padding: "10px 16px" }}>
-                      <button onClick={() => navigate(`/customers/${c.id}`)} style={{ background: "none", border: "none", color: "var(--teal)" }}>
+                      <button onClick={() => navigate(`/customers/${c.id}`)} style={{ background: "none", border: "none", color: "var(--teal)", cursor: "pointer" }}>
                         <ExternalLink size={14} />
+                      </button>
+                    </td>
+                    <td style={{ padding: "10px 8px" }}>
+                      <button
+                        onClick={() => setDeleteTarget({ id: c.id, name: c.name })}
+                        title="Delete customer"
+                        style={{ background: "none", border: "none", color: "#ef4444", cursor: "pointer", opacity: 0.7 }}
+                        onMouseEnter={(e) => e.currentTarget.style.opacity = 1}
+                        onMouseLeave={(e) => e.currentTarget.style.opacity = 0.7}
+                      >
+                        <Trash2 size={14} />
                       </button>
                     </td>
                   </tr>
@@ -191,6 +219,42 @@ export default function AdminCustomersPage() {
 
       {showAdd && <AddCustomerModal agents={agents} onClose={() => setShowAdd(false)} onDone={() => { setShowAdd(false); load(); }} />}
       {showImport && <ImportModal onClose={() => setShowImport(false)} onDone={() => { setShowImport(false); load(); }} />}
+
+      {/* Delete Confirmation Modal */}
+      {deleteTarget && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <div style={{ background: "var(--card)", borderRadius: 14, padding: 28, width: 400, boxShadow: "0 20px 60px rgba(0,0,0,0.3)" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
+              <div style={{ width: 40, height: 40, borderRadius: "50%", background: "#fef2f2", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                <Trash2 size={18} color="#ef4444" />
+              </div>
+              <div>
+                <div style={{ fontWeight: 700, fontSize: 15, color: "var(--ink)" }}>Delete Customer</div>
+                <div style={{ fontSize: 12.5, color: "var(--muted)", marginTop: 2 }}>This action cannot be undone</div>
+              </div>
+            </div>
+            <p style={{ fontSize: 13.5, color: "var(--text-secondary)", lineHeight: 1.6, marginBottom: 20 }}>
+              Are you sure you want to permanently delete <strong>{deleteTarget.name}</strong>? All associated orders, calls, tickets, notes, and timeline events will also be deleted.
+            </p>
+            <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
+              <button
+                onClick={() => setDeleteTarget(null)}
+                disabled={deleting}
+                style={{ padding: "9px 18px", borderRadius: 8, border: "1px solid var(--card-border)", background: "var(--bg)", fontSize: 13, fontWeight: 600, cursor: "pointer", color: "var(--ink)" }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDelete}
+                disabled={deleting}
+                style={{ padding: "9px 18px", borderRadius: 8, border: "none", background: "#ef4444", color: "#fff", fontSize: 13, fontWeight: 700, cursor: deleting ? "not-allowed" : "pointer", opacity: deleting ? 0.7 : 1 }}
+              >
+                {deleting ? "Deleting…" : "Yes, Delete"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
