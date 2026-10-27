@@ -2,7 +2,141 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../lib/api";
 import { SEGMENTS, SOURCES } from "../lib/constants";
-import { Search, Plus, Upload, ExternalLink, X, ChevronLeft, ChevronRight, Trash2 } from "lucide-react";
+import { Search, Plus, Upload, Download, ExternalLink, X, ChevronLeft, ChevronRight, Trash2 } from "lucide-react";
+
+export function downloadCustomerSampleCsv() {
+  const headers = [
+    "name",
+    "phone",
+    "email",
+    "age",
+    "gender",
+    "city",
+    "segment",
+    "source",
+    "ltv",
+    "last_order_date",
+    "replenish_due_date",
+    "cart_value",
+    "cart_items",
+    "cart_abandoned_at",
+    "health_conditions",
+    "product_preferences",
+    "allergies_restrictions",
+    "preferred_contact_time",
+    "preferred_language",
+    "household_notes",
+    "price_sensitivity",
+    "product_name",
+    "sku",
+    "order_ids"
+  ];
+
+  const sampleRows = [
+    [
+      "Aarav Sharma",
+      "+919876543210",
+      "aarav.sharma@example.com",
+      "34",
+      "male",
+      "Mumbai",
+      "vip",
+      "meta_ads",
+      "12500",
+      "2026-09-15",
+      "2026-11-15",
+      "",
+      "",
+      "",
+      "diabetes; hypertension",
+      "Ayurvedic supplements; Omega-3",
+      "None",
+      "evening",
+      "English",
+      "Prefers doorstep delivery",
+      "moderate",
+      "Daily Multivitamin 60s",
+      "DMV-60",
+      "ORD-9821, ORD-10244"
+    ],
+    [
+      "Priya Patel",
+      "+919812345678",
+      "priya.p@example.com",
+      "29",
+      "female",
+      "Ahmedabad",
+      "abandoned_cart",
+      "google_ads",
+      "0",
+      "",
+      "",
+      "2499",
+      "Skin Glow Serum 30ml",
+      "2026-10-20 14:30:00",
+      "acne; dry skin",
+      "Organic skincare; Sunscreen",
+      "Gluten allergy",
+      "morning",
+      "Hindi",
+      "Family of 3",
+      "budget",
+      "Skin Glow Serum",
+      "SGS-30",
+      ""
+    ],
+    [
+      "Rohan Verma",
+      "+919988776655",
+      "rohan.v@example.com",
+      "42",
+      "male",
+      "Delhi",
+      "repeat_customer",
+      "referral",
+      "4500",
+      "2026-10-05",
+      "2026-11-05",
+      "",
+      "",
+      "",
+      "joint pain",
+      "Joint Care Balm; Calcium Tablets",
+      "Dust allergy",
+      "afternoon",
+      "English",
+      "",
+      "high_value",
+      "Joint Care Balm 100g",
+      "JCB-100",
+      "ORD-11502"
+    ]
+  ];
+
+  const escapeCsvField = (val) => {
+    if (val === null || val === undefined) return "";
+    const str = String(val);
+    if (str.includes(",") || str.includes('"') || str.includes("\n") || str.includes(";")) {
+      return `"${str.replace(/"/g, '""')}"`;
+    }
+    return str;
+  };
+
+  const csvContent = [
+    headers.join(","),
+    ...sampleRows.map(row => row.map(escapeCsvField).join(","))
+  ].join("\r\n");
+
+  const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.setAttribute("href", url);
+  link.setAttribute("download", "customer_bulk_import_sample.csv");
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
 
 export default function AdminCustomersPage() {
   const [customers, setCustomers] = useState([]);
@@ -74,7 +208,10 @@ export default function AdminCustomersPage() {
           <h1 style={{ fontSize: 21, fontWeight: 800, margin: 0 }}>All customers</h1>
           <p style={{ fontSize: 13.5, color: "var(--muted)", margin: "4px 0 0" }}>{total} total customers</p>
         </div>
-        <div style={{ display: "flex", gap: 8 }}>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          <button onClick={downloadCustomerSampleCsv} style={btnSecondary} title="Download sample CSV format">
+            <Download size={14} /> Sample CSV
+          </button>
           <button onClick={() => setShowImport(true)} style={btnSecondary}>
             <Upload size={14} /> Bulk import CSV
           </button>
@@ -364,24 +501,107 @@ function ImportModal({ onClose, onDone }) {
 
   return (
     <ModalShell title="Bulk import customers (CSV)" onClose={onClose} wide>
-      <p style={{ fontSize: 12.5, color: "var(--muted)", marginTop: -6, marginBottom: 14 }}>
-        Expected columns: <code>name, phone, email, age, gender, city, segment, source, ltv, last_order_date, replenish_due_date, cart_value, cart_items, cart_abandoned_at, health_conditions, product_preferences, allergies_restrictions, preferred_contact_time, preferred_language, household_notes, price_sensitivity, product_name, sku, order_ids</code>.
-        Only <strong>name</strong> and <strong>phone</strong> are required — leave others blank if not applicable. For <code>health_conditions</code>/<code>product_preferences</code>, separate multiple values with a semicolon or comma in the same cell (e.g. "diabetes; joint pain").
-      </p>
+      {/* Sample Download Banner */}
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: 12,
+          background: "var(--teal-subtle, #f0fdf4)",
+          border: "1px solid var(--teal-border, #bbf7d0)",
+          borderRadius: 10,
+          padding: "12px 14px",
+          marginBottom: 16
+        }}
+      >
+        <div>
+          <div style={{ fontWeight: 700, fontSize: 13, color: "var(--teal, #0f766e)", marginBottom: 2 }}>
+            Sample Import Template
+          </div>
+          <div style={{ fontSize: 12, color: "var(--muted, #64748b)" }}>
+            Download sample CSV with supported column headers and example records.
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={downloadCustomerSampleCsv}
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 6,
+            background: "#fff",
+            color: "var(--teal, #0f766e)",
+            border: "1px solid var(--teal, #0f766e)",
+            borderRadius: 8,
+            padding: "7px 13px",
+            fontSize: 12.5,
+            fontWeight: 700,
+            cursor: "pointer",
+            whiteSpace: "nowrap",
+            boxShadow: "0 1px 2px rgba(0,0,0,0.05)"
+          }}
+        >
+          <Download size={14} /> Download Sample CSV
+        </button>
+      </div>
 
-      <input ref={fileRef} type="file" accept=".csv" onChange={handleFile} style={{ marginBottom: 12 }} />
+      <div style={{ background: "#f8fafc", border: "1px solid var(--slate-border, #e2e8f0)", borderRadius: 10, padding: "10px 12px", marginBottom: 14 }}>
+        <p style={{ fontSize: 12, color: "var(--muted, #64748b)", margin: 0, lineHeight: 1.5 }}>
+          <strong>Required columns:</strong> <code style={{ color: "var(--ink, #1e293b)" }}>name, phone</code>
+          <br />
+          <strong>Optional columns:</strong> <code>email, age, gender, city, segment, source, ltv, last_order_date, replenish_due_date, cart_value, cart_items, cart_abandoned_at, health_conditions, product_preferences, allergies_restrictions, preferred_contact_time, preferred_language, household_notes, price_sensitivity, product_name, sku, order_ids</code>
+          <br />
+          <span style={{ fontSize: 11.5, color: "#64748b" }}>Tip: For multiple conditions or preferences in one cell, separate with semicolons (e.g. <code>diabetes; joint pain</code>).</span>
+        </p>
+      </div>
+
+      <div style={{ marginBottom: 14 }}>
+        <label style={{ display: "block", fontSize: 12.5, fontWeight: 600, color: "var(--ink)", marginBottom: 6 }}>
+          Upload CSV File
+        </label>
+        <input
+          ref={fileRef}
+          type="file"
+          accept=".csv"
+          onChange={handleFile}
+          style={{
+            display: "block",
+            width: "100%",
+            fontSize: 12.5,
+            padding: "8px 10px",
+            border: "1px dashed var(--slate-border, #cbd5e1)",
+            borderRadius: 8,
+            background: "#fff",
+            cursor: "pointer"
+          }}
+        />
+      </div>
 
       {rows.length > 0 && (
-        <div style={{ fontSize: 12.5, color: "var(--teal)", background: "var(--teal-light)", borderRadius: 8, padding: "8px 12px", marginBottom: 12 }}>
-          {fileName}: {rows.length} rows ready to import.
+        <div style={{ fontSize: 12.5, color: "var(--teal, #0f766e)", background: "var(--teal-light, #ecfdf5)", border: "1px solid var(--teal-border, #a7f3d0)", borderRadius: 8, padding: "10px 12px", marginBottom: 14 }}>
+          <strong>{fileName}</strong>: {rows.length} rows ready to import.
         </div>
       )}
 
-      {error && <div style={{ color: "var(--coral)", fontSize: 12.5, marginBottom: 10 }}>{error}</div>}
+      {error && <div style={{ color: "var(--coral, #ef4444)", fontSize: 12.5, marginBottom: 12, background: "#fef2f2", padding: "8px 12px", borderRadius: 8 }}>{error}</div>}
 
-      <button onClick={submit} disabled={rows.length === 0 || importing} style={{ ...btnPrimary, width: "100%", justifyContent: "center", opacity: rows.length === 0 ? 0.5 : 1 }}>
-        {importing ? "Importing…" : `Import ${rows.length || ""} customers`}
-      </button>
+      <div style={{ display: "flex", gap: 10, marginTop: 4 }}>
+        <button
+          type="button"
+          onClick={onClose}
+          style={{ ...btnSecondary, flex: 1, justifyContent: "center" }}
+        >
+          Cancel
+        </button>
+        <button
+          onClick={submit}
+          disabled={rows.length === 0 || importing}
+          style={{ ...btnPrimary, flex: 2, justifyContent: "center", opacity: rows.length === 0 ? 0.5 : 1 }}
+        >
+          {importing ? "Importing…" : `Import ${rows.length ? `${rows.length} ` : ""}Customers`}
+        </button>
+      </div>
     </ModalShell>
   );
 }
