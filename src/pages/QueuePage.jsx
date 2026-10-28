@@ -2,12 +2,16 @@ import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../lib/api";
 import { SEGMENTS, SOURCES, OUTCOMES, OBJECTION_TYPES, SENTIMENTS, DECISION_STYLES, PRICE_SENSITIVITY } from "../lib/constants";
-import { Phone, AlertCircle, CheckCircle2, X, ExternalLink, RefreshCw, ChevronDown, ChevronUp } from "lucide-react";
+import { Phone, AlertCircle, CheckCircle2, X, ExternalLink, RefreshCw, ChevronDown, ChevronUp, ChevronLeft, ChevronRight } from "lucide-react";
 
 export default function QueuePage() {
   const [queue, setQueue] = useState([]);
   const [segmentFilter, setSegmentFilter] = useState("all");
   const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(25);
+  const [total, setTotal] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
   const [activeCallId, setActiveCallId] = useState(null);
   const [toast, setToast] = useState(null);
   const navigate = useNavigate();
@@ -15,19 +19,30 @@ export default function QueuePage() {
   const loadQueue = useCallback(async () => {
     setLoading(true);
     try {
-      const params = segmentFilter !== "all" ? { segment: segmentFilter } : {};
+      const params = {
+        page,
+        limit,
+        ...(segmentFilter !== "all" ? { segment: segmentFilter } : {}),
+      };
       const res = await api.getQueue(params);
-      setQueue(res.queue);
+      setQueue(res.queue || []);
+      setTotal(res.total ?? (res.queue ? res.queue.length : 0));
+      setTotalPages(res.totalPages || 1);
     } catch (e) {
       console.error(e);
     } finally {
       setLoading(false);
     }
-  }, [segmentFilter]);
+  }, [segmentFilter, page, limit]);
 
   useEffect(() => {
     loadQueue();
   }, [loadQueue]);
+
+  const handleFilterChange = (filter) => {
+    setSegmentFilter(filter);
+    setPage(1);
+  };
 
   const showToast = (msg) => {
     setToast(msg);
@@ -55,9 +70,9 @@ export default function QueuePage() {
       </p>
 
       <div style={{ display: "flex", gap: 8, marginBottom: 18, flexWrap: "wrap" }}>
-        <FilterChip active={segmentFilter === "all"} onClick={() => setSegmentFilter("all")} label="All" />
+        <FilterChip active={segmentFilter === "all"} onClick={() => handleFilterChange("all")} label="All" />
         {Object.entries(SEGMENTS).map(([key, seg]) => (
-          <FilterChip key={key} active={segmentFilter === key} onClick={() => setSegmentFilter(key)} label={seg.label} color={seg.color} />
+          <FilterChip key={key} active={segmentFilter === key} onClick={() => handleFilterChange(key)} label={seg.label} color={seg.color} />
         ))}
       </div>
 
@@ -66,20 +81,90 @@ export default function QueuePage() {
       ) : queue.length === 0 ? (
         <EmptyQueue />
       ) : (
-        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          {queue.map((c, idx) => (
-            <CustomerCard
-              key={c.id}
-              customer={c}
-              rank={idx + 1}
-              isActive={activeCallId === c.id}
-              onStartCall={() => setActiveCallId(c.id)}
-              onCloseCall={() => setActiveCallId(null)}
-              onLogged={handleLogged}
-              onViewProfile={() => navigate(`/customers/${c.id}`)}
-            />
-          ))}
-        </div>
+        <>
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            {queue.map((c, idx) => (
+              <CustomerCard
+                key={c.id}
+                customer={c}
+                rank={(page - 1) * limit + idx + 1}
+                isActive={activeCallId === c.id}
+                onStartCall={() => setActiveCallId(c.id)}
+                onCloseCall={() => setActiveCallId(null)}
+                onLogged={handleLogged}
+                onViewProfile={() => navigate(`/customers/${c.id}`)}
+              />
+            ))}
+          </div>
+
+          {total > 0 && (
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 18, padding: "12px 4px", borderTop: "1px solid var(--card-border, #e2e8f0)", flexWrap: "wrap", gap: 12 }}>
+              <div style={{ fontSize: 13, color: "var(--muted)" }}>
+                Showing {(page - 1) * limit + 1}–{Math.min(page * limit, total)} of {total} in queue
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13 }}>
+                  <span style={{ color: "var(--muted)" }}>Per page:</span>
+                  <select
+                    value={limit}
+                    onChange={(e) => {
+                      setLimit(Number(e.target.value));
+                      setPage(1);
+                    }}
+                    style={{ padding: "4px 8px", borderRadius: 6, border: "1px solid var(--slate-border)", fontSize: 13, background: "#fff" }}
+                  >
+                    {[10, 25, 50, 100].map((l) => (
+                      <option key={l} value={l}>{l}</option>
+                    ))}
+                  </select>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                  <button
+                    onClick={() => setPage((p) => Math.max(1, p - 1))}
+                    disabled={page <= 1}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      background: "#fff",
+                      border: "1px solid var(--slate-border)",
+                      borderRadius: 6,
+                      width: 32,
+                      height: 32,
+                      cursor: page <= 1 ? "not-allowed" : "pointer",
+                      opacity: page <= 1 ? 0.4 : 1,
+                      color: "var(--slate)",
+                    }}
+                  >
+                    <ChevronLeft size={16} />
+                  </button>
+                  <div style={{ padding: "0 10px", fontSize: 13, fontWeight: 600 }}>
+                    Page {page} of {totalPages || 1}
+                  </div>
+                  <button
+                    onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                    disabled={page >= totalPages}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      background: "#fff",
+                      border: "1px solid var(--slate-border)",
+                      borderRadius: 6,
+                      width: 32,
+                      height: 32,
+                      cursor: page >= totalPages ? "not-allowed" : "pointer",
+                      opacity: page >= totalPages ? 0.4 : 1,
+                      color: "var(--slate)",
+                    }}
+                  >
+                    <ChevronRight size={16} />
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+        </>
       )}
 
       {toast && <Toast message={toast} />}
