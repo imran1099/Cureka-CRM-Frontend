@@ -11,18 +11,21 @@ export default function AdminAgentsPage() {
   const [resetTarget, setResetTarget] = useState(null);
   const [roles, setRoles] = useState([]);
   const [departments, setDepartments] = useState([]);
+  const [brands, setBrands] = useState([]);
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const [res, rolesRes, deptRes] = await Promise.all([
-        api.iam.listUsers(),
+      const [res, rolesRes, deptRes, brandsRes] = await Promise.all([
+        api.iam.listUsers({ limit: 500 }),
         api.roles.listRoles(),
-        api.departments.list()
+        api.departments.list(),
+        api.listBrands()
       ]);
-      setAgents(res.users);
-      setRoles(rolesRes.roles);
-      setDepartments(deptRes.departments);
+      setAgents(res.users || []);
+      setRoles(rolesRes.roles || []);
+      setDepartments(deptRes.departments || []);
+      setBrands(brandsRes.brands || []);
     } finally {
       setLoading(false);
     }
@@ -94,17 +97,41 @@ export default function AdminAgentsPage() {
         </div>
       )}
 
-      {showAdd && <AddAgentModal roles={roles} departments={departments} onClose={() => setShowAdd(false)} onDone={() => { setShowAdd(false); load(); }} />}
+      {showAdd && <AddAgentModal roles={roles} departments={departments} brands={brands} onClose={() => setShowAdd(false)} onDone={() => { setShowAdd(false); load(); }} />}
       {resetTarget && <ResetPasswordModal agent={resetTarget} onClose={() => setResetTarget(null)} onDone={() => { setResetTarget(null); load(); }} />}
     </div>
   );
 }
 
-function AddAgentModal({ roles, departments, onClose, onDone }) {
-  const [form, setForm] = useState({ name: "", email: "", password: "", employee_id: "", role_id: roles[0]?.id || "", department_id: "" });
+function AddAgentModal({ roles, departments, brands = [], onClose, onDone }) {
+  const [form, setForm] = useState({
+    name: "",
+    email: "",
+    password: "",
+    employee_id: "",
+    role_id: roles[0]?.id || "",
+    department_id: "",
+    brand_ids: brands.map(b => b.id)
+  });
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
+
+  useEffect(() => {
+    if (brands.length && (!form.brand_ids || form.brand_ids.length === 0)) {
+      setForm((f) => ({ ...f, brand_ids: brands.map(b => b.id) }));
+    }
+  }, [brands]);
+
+  const toggleBrand = (bId) => {
+    setForm((f) => {
+      const current = f.brand_ids || [];
+      return {
+        ...f,
+        brand_ids: current.includes(bId) ? current.filter(id => id !== bId) : [...current, bId]
+      };
+    });
+  };
 
   const submit = async () => {
     setSaving(true);
@@ -142,6 +169,41 @@ function AddAgentModal({ roles, departments, onClose, onDone }) {
           </Field>
         </div>
       </div>
+
+      {brands.length > 0 && (
+        <Field label="Brand Access">
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 4 }}>
+            {brands.map(b => {
+              const isSelected = form.brand_ids?.includes(b.id);
+              return (
+                <button
+                  key={b.id}
+                  type="button"
+                  onClick={() => toggleBrand(b.id)}
+                  style={{
+                    fontSize: 12,
+                    fontWeight: 600,
+                    padding: "5px 10px",
+                    borderRadius: 7,
+                    border: `1px solid ${isSelected ? "var(--teal)" : "var(--slate-border)"}`,
+                    background: isSelected ? "var(--teal-light, #ecfdf5)" : "#fff",
+                    color: isSelected ? "var(--teal)" : "var(--slate)",
+                    cursor: "pointer",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 4
+                  }}
+                >
+                  <span style={{ fontSize: 13, lineHeight: 1 }}>{isSelected ? "✓" : "+"}</span> {b.name}
+                </button>
+              );
+            })}
+          </div>
+          <div style={{ fontSize: 11, color: "var(--muted)" }}>
+            Select the brand(s) this user can access. Defaults to all active brands.
+          </div>
+        </Field>
+      )}
 
       <Field label="Temporary Password"><input style={inputStyle} value={form.password} onChange={(e) => set("password", e.target.value)} placeholder="Share securely with the agent" /></Field>
       

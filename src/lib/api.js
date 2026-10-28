@@ -23,8 +23,9 @@ async function request(path, { method = "GET", body, auth = true } = {}) {
 
   const brandId = getBrandId();
   if (brandId && auth) {
-    // Exclude brand APIs from auto-injection
-    if (!cleanPath.startsWith("/brands")) {
+    // Exclude brand and IAM APIs from auto-injection
+    const noAutoBrandPaths = ["/brands", "/users", "/roles", "/departments", "/permissions", "/sessions", "/audit"];
+    if (!noAutoBrandPaths.some((p) => cleanPath.startsWith(p))) {
       if (method === "GET" || method === "DELETE") {
         const char = url.includes("?") ? "&" : "?";
         url += `${char}brand_id=${encodeURIComponent(brandId)}`;
@@ -77,6 +78,7 @@ export const api = {
       const qs = new URLSearchParams(params).toString();
       return request(`/users${qs ? `?${qs}` : ""}`);
     },
+    listAssignable: () => request("/users/assignable"),
     getUser: (id) => request(`/users/${id}`),
     getTeam: (id) => request(`/users/${id}/team`),
     createUser: (payload) => request("/users", { method: "POST", body: payload }),

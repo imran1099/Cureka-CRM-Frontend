@@ -162,11 +162,16 @@ export default function AdminCustomersPage() {
       const params = { page, limit };
       if (query) params.q = query;
       if (segmentFilter !== "all") params.segment = segmentFilter;
-      const [custRes, agentRes] = await Promise.all([api.listCustomers(params), api.iam.listUsers({ limit: 1000 })]);
+      const custRes = await api.listCustomers(params);
       setCustomers(custRes.customers || []);
       setTotal(custRes.total || 0);
-      console.log("Agents", agentRes);
-      setAgents(agentRes.users || []);
+
+      try {
+        const agentRes = await api.iam.listAssignable();
+        setAgents(agentRes.users || []);
+      } catch (err) {
+        setAgents([]);
+      }
     } finally {
       setLoading(false);
     }
