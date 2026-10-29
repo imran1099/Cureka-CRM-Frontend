@@ -223,6 +223,30 @@ export default function CustomerProfilePage() {
             </div>
           </div>
 
+          {/* Product & Order Info (from CSV import) */}
+          {(customer.product_name || customer.sku || customer.order_ids || customer.last_order_date) && (
+            <div className="card-panel" style={{ padding: 18 }}>
+              <h3 style={{ fontSize: 14, fontWeight: 700, marginBottom: 14, color: "var(--ink)", display: "flex", alignItems: "center", gap: 8 }}>
+                <ShoppingBag size={16} style={{ color: "var(--teal)" }} />
+                Product & Order Info
+              </h3>
+              <div style={{ display: "flex", flexDirection: "column", gap: 10, fontSize: 13 }}>
+                {customer.product_name && (
+                  <DetailRow icon={ShoppingBag} label="Product Name" value={customer.product_name} />
+                )}
+                {customer.sku && (
+                  <DetailRow icon={Tag} label="SKU" value={customer.sku} />
+                )}
+                {customer.order_ids && (
+                  <DetailRow icon={FileText} label="Order ID(s)" value={customer.order_ids} />
+                )}
+                {customer.last_order_date && (
+                  <DetailRow icon={Calendar} label="Last Order Date" value={customer.last_order_date} />
+                )}
+              </div>
+            </div>
+          )}
+
           {/* Subscriptions & Consents */}
           <div className="card-panel" style={{ padding: 18 }}>
             <h3 style={{ fontSize: 14, fontWeight: 700, marginBottom: 12, color: "var(--ink)" }}>
@@ -244,7 +268,13 @@ export default function CustomerProfilePage() {
             {[
               { id: "timeline", label: "Unified Timeline", icon: Activity },
               { id: "whatsapp", label: "WhatsApp (BoB)", icon: MessageSquare },
-              { id: "orders", label: `Orders (${orders.length})`, icon: ShoppingBag },
+              { id: "orders", label: `Orders (${
+                orders.length > 0
+                  ? orders.length
+                  : customer.order_ids
+                    ? customer.order_ids.split(/[,;]/).map(s => s.trim()).filter(Boolean).length
+                    : (customer.product_name || customer.last_order_date) ? 1 : 0
+              })`, icon: ShoppingBag },
               { id: "abandoned", label: `Abandoned Carts (${abandoned_checkouts.length})`, icon: ShoppingBag },
               { id: "communication", label: "Communications", icon: MessageSquare },
               { id: "support", label: `Tickets (${support.tickets.length})`, icon: Ticket },
@@ -422,7 +452,65 @@ export default function CustomerProfilePage() {
                     </div>
                   </div>
                 ))}
-                {orders.length === 0 && <div style={{ padding: 20, textAlign: "center", color: "var(--muted)" }}>No purchase history found.</div>}
+                {orders.length === 0 && (
+                  customer.product_name || customer.order_ids || customer.last_order_date ? (
+                    // Fallback: render CSV-imported order data directly from customer fields
+                    <div style={{ border: "1px solid var(--card-border)", borderRadius: "var(--radius-md)", padding: 16 }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", borderBottom: "1px solid var(--card-border)", paddingBottom: 12, marginBottom: 12 }}>
+                        <div>
+                          <div style={{ fontWeight: 700, fontSize: 14 }}>
+                            {customer.order_ids
+                              ? customer.order_ids.split(/[,;]/).map(ref => ref.trim()).filter(Boolean).map((ref, i) => (
+                                  <span key={i} className="badge" style={{ marginRight: 6, background: "var(--bg-elevated)", color: "var(--ink)" }}>
+                                    Order #{ref}
+                                  </span>
+                                ))
+                              : "Imported Order"}
+                            <span className="badge" style={{ marginLeft: 4, background: "var(--teal-light)", color: "var(--teal)" }}>CSV Import</span>
+                          </div>
+                          {customer.last_order_date && (
+                            <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 4 }}>
+                              Last Order: {customer.last_order_date}
+                            </div>
+                          )}
+                        </div>
+                        <div style={{ textAlign: "right" }}>
+                          <div style={{ fontWeight: 700, fontSize: 15, color: "var(--teal)" }}>
+                            ₹{Number(customer.ltv || 0).toLocaleString("en-IN")}
+                          </div>
+                          <div style={{ fontSize: 12, marginTop: 4 }}>
+                            <span className="badge badge-success">Paid</span>
+                          </div>
+                        </div>
+                      </div>
+                      <div style={{ fontSize: 13 }}>
+                        <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                          <thead>
+                            <tr style={{ color: "var(--muted)", fontSize: 11, textTransform: "uppercase", textAlign: "left" }}>
+                              <th style={{ paddingBottom: 8 }}>Item</th>
+                              <th style={{ paddingBottom: 8, textAlign: "right" }}>SKU</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            <tr>
+                              <td style={{ padding: "6px 0", fontWeight: 500 }}>
+                                {customer.product_name || "—"}
+                              </td>
+                              <td style={{ padding: "6px 0", textAlign: "right", color: "var(--muted)", fontSize: 12 }}>
+                                {customer.sku || "—"}
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                      <div style={{ marginTop: 10, padding: "8px 12px", background: "var(--status-info-bg)", borderRadius: "var(--radius-sm)", fontSize: 11, color: "var(--status-info-text)" }}>
+                        ℹ️ This order was imported via CSV. Re-import this customer or log a call to generate full order history.
+                      </div>
+                    </div>
+                  ) : (
+                    <div style={{ padding: 20, textAlign: "center", color: "var(--muted)" }}>No purchase history found.</div>
+                  )
+                )}
               </div>
             </div>
           )}
@@ -572,7 +660,9 @@ export default function CustomerProfilePage() {
               <div style={{ fontSize: 11, fontWeight: 700, color: "var(--muted)", marginBottom: 4 }}>CUSTOMER SENTIMENT ANALYSIS</div>
               <div style={{ display: "flex", alignItems: "center", gap: 8, color: "var(--status-success-text)", fontWeight: 700, fontSize: 14 }}>
                 <HeartPulse size={18} />
-                Positive ({aiInsights.sentiment.positive}%)
+                {typeof aiInsights.sentiment === "object" && aiInsights.sentiment !== null
+                  ? `Positive (${aiInsights.sentiment.positive}%)`
+                  : aiInsights.sentiment || "Sentiment analysis unavailable"}
               </div>
             </div>
 
